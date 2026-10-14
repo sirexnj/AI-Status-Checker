@@ -29,8 +29,8 @@ android {
         applicationId "ir.nimasirex.aistatus"
         minSdk 24
         targetSdk 34
-        versionCode 4
-        versionName "1.3.0"
+        versionCode 5
+        versionName "1.4.0"
     }
     signingConfigs {
         release {
@@ -165,23 +165,23 @@ public class ServiceData {
         l.add(new AIService("notebook_lm", CATEGORIES[0], "NotebookLM", "https://notebooklm.google.com", false));
         l.add(new AIService("google_labs", CATEGORIES[0], "Google Labs (Imagen/Veo)", "https://labs.google/fx", false));
         l.add(new AIService("vertex_ai", CATEGORIES[0], "Vertex AI", "https://console.cloud.google.com/vertex-ai", false));
-        l.add(new AIService("chatgpt_web", CATEGORIES[1], "ChatGPT Web/App", "https://chatgpt.com", false));
+        l.add(new AIService("chatgpt_web", CATEGORIES[1], "ChatGPT Web/App", "https://chatgpt.com/backend-api/models", false));
         l.add(new AIService("openai_plat", CATEGORIES[1], "OpenAI Platform", "https://platform.openai.com", false));
         l.add(new AIService("openai_api", CATEGORIES[1], "OpenAI API", "https://api.openai.com/v1/models", false));
         l.add(new AIService("sora", CATEGORIES[1], "Sora Video AI", "https://sora.com", false));
-        l.add(new AIService("claude_web", CATEGORIES[2], "Claude Web/App", "https://claude.ai", false));
+        l.add(new AIService("claude_web", CATEGORIES[2], "Claude Web/App", "https://claude.ai/api/organizations", false));
         l.add(new AIService("claude_con", CATEGORIES[2], "Anthropic Console", "https://console.anthropic.com", false));
         l.add(new AIService("claude_api", CATEGORIES[2], "Claude API", "https://api.anthropic.com/v1/messages", false));
         l.add(new AIService("perp_web", CATEGORIES[3], "Perplexity Web/App", "https://www.perplexity.ai", false));
         l.add(new AIService("perp_api", CATEGORIES[3], "Perplexity API", "https://api.perplexity.ai", false));
         l.add(new AIService("ms_copilot", CATEGORIES[4], "Microsoft Copilot", "https://copilot.microsoft.com", false));
-        l.add(new AIService("gh_copilot", CATEGORIES[4], "GitHub Copilot", "https://github.com/features/copilot", false));
-        l.add(new AIService("grok_ai", CATEGORIES[5], "Grok (xAI)", "https://x.ai", false));
+        l.add(new AIService("gh_copilot", CATEGORIES[4], "GitHub Copilot", "https://api.githubcopilot.com/_ping", false));
+        l.add(new AIService("grok_ai", CATEGORIES[5], "Grok (xAI)", "https://grok.com", false));
         l.add(new AIService("meta_ai", CATEGORIES[5], "Meta AI (Llama)", "https://www.meta.ai", false));
         l.add(new AIService("deepseek", CATEGORIES[6], "DeepSeek Chat", "https://chat.deepseek.com", false));
         l.add(new AIService("huggingface", CATEGORIES[6], "Hugging Face", "https://huggingface.co", false));
-        l.add(new AIService("elevenlabs", CATEGORIES[6], "ElevenLabs Audio", "https://elevenlabs.io", false));
-        l.add(new AIService("replicate", CATEGORIES[6], "Replicate Cloud", "https://replicate.com", false));
+        l.add(new AIService("elevenlabs", CATEGORIES[6], "ElevenLabs Audio", "https://api.elevenlabs.io/v1/voices", false));
+        l.add(new AIService("replicate", CATEGORIES[6], "Replicate Cloud", "https://api.replicate.com/v1/models", false));
         return l;
     }
 
@@ -192,12 +192,49 @@ public class ServiceData {
             StringBuilder sb = new StringBuilder();
             char[] b = new char[4096];
             int n;
-            while ((n = r.read(b)) != -1 && sb.length() < 50000) {
+            while ((n = r.read(b)) != -1 && sb.length() < 60000) {
                 sb.append(b, 0, n);
             }
             r.close();
             return sb.toString().toLowerCase();
         } catch (Exception e) { return ""; }
+    }
+
+    // Strict Google AI Geo-Restriction Probe (Catches "This country isn't supported" even without API Key)
+    private static boolean isGoogleAiGeoBlocked(String apiKey) {
+        try {
+            String probeUrl = apiKey.isEmpty()
+                ? "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDummyKeyForGeoCheck"
+                : "https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey;
+            HttpURLConnection gc = (HttpURLConnection) new URL(probeUrl).openConnection();
+            gc.setConnectTimeout(4500);
+            gc.setReadTimeout(4500);
+            if (apiKey.isEmpty()) {
+                gc.setRequestMethod("POST");
+                gc.setRequestProperty("Content-Type", "application/json");
+                gc.setDoOutput(true);
+                OutputStream os = gc.getOutputStream();
+                os.write("{\"contents\":[{\"parts\":[{\"text\":\"hi\"}]}]}".getBytes("UTF-8"));
+                os.close();
+            }
+            int code = gc.getResponseCode();
+            String body = readStream(code >= 400 ? gc.getErrorStream() : gc.getInputStream());
+            if (body.contains("location is not supported") || body.contains("country") || body.contains("failed_precondition") || code == 403) {
+                return true;
+            }
+            // Second strict probe via NotebookLM redirect check
+            HttpURLConnection nc = (HttpURLConnection) new URL("https://notebooklm.google.com").openConnection();
+            nc.setConnectTimeout(4000);
+            nc.setReadTimeout(4000);
+            nc.setInstanceFollowRedirects(true);
+            nc.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) Chrome/124.0.0.0 Mobile");
+            nc.getResponseCode();
+            String nUrl = nc.getURL().toString().toLowerCase();
+            if (nUrl.contains("unsupported") || nUrl.contains("region") || nUrl.contains("faq")) {
+                return true;
+            }
+        } catch (Exception ignored) {}
+        return false;
     }
 
     public static String checkService(Context ctx, AIService s) {
@@ -212,21 +249,22 @@ public class ServiceData {
 
             HttpURLConnection c = (HttpURLConnection) new URL(targetUrl).openConnection();
             c.setConnectTimeout(6000); c.setReadTimeout(6000); c.setInstanceFollowRedirects(true);
-            c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
-            
-            int code;
-            String snip = "";
-            try {
-                code = c.getResponseCode();
-                snip = readStream(code >= 400 ? c.getErrorStream() : c.getInputStream());
-            } catch (Exception e) {
-                return "❌ قطع / عدم دسترسی";
+            c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36");
+
+            int code = c.getResponseCode();
+            String snip = readStream(code >= 400 ? c.getErrorStream() : c.getInputStream());
+            String fu = c.getURL().toString().toLowerCase();
+
+            // Dual-check for all Google AI services (except general Vertex Cloud console)
+            if (s.category.equals(CATEGORIES[0]) && !s.id.equals("vertex_ai")) {
+                if (isGoogleAiGeoBlocked(key)) {
+                    long ping = System.currentTimeMillis() - t0;
+                    return "⚠️ تحریم آی‌پی (کشور غیرمجاز) | " + ping + "ms";
+                }
             }
 
             long ping = System.currentTimeMillis() - t0;
-            String fu = c.getURL().toString().toLowerCase();
 
-            // Check for strict geo-blocking or unsupported country keywords in response or URL
             if (fu.contains("unsupported") || fu.contains("region") || fu.contains("faq") || fu.contains("unavailable") ||
                 snip.contains("country isn't supported") ||
                 snip.contains("location is not supported") ||
@@ -236,19 +274,18 @@ public class ServiceData {
                 snip.contains("gradually expanding") ||
                 snip.contains("access denied") ||
                 snip.contains("error 1020")) {
-                return "⚠️ تحریم آی‌پی (محدودیت منطقه) | " + ping + "ms";
+                return "⚠️ تحریم آی‌پی (کشور غیرمجاز) | " + ping + "ms";
             }
 
-            // Google specific strict check: if code is 200 but body contains typical geo-restriction scripts or lacks app markup
-            if (s.category.equals(CATEGORIES[0]) && (snip.contains("not supported") || snip.contains("country") || snip.length() < 200)) {
-                return "⚠️ تحریم آی‌پی (محدودیت گوگل) | " + ping + "ms";
+            if (code == 403 || code == 451) {
+                return "⚠️ محدودیت آی‌پی (403) | " + ping + "ms";
             }
 
-            if (code == 403 || code == 451 || code == 429) {
-                return "⚠️ محدودیت دسترسی (" + code + ") | " + ping + "ms";
+            if (s.supportsApiKey && !key.isEmpty() && code == 200) {
+                return "✅ متصل با کلید (" + ping + "ms)";
             }
 
-            if ((code >= 200 && code < 400) || code == 401 || code == 405) {
+            if ((code >= 200 && code < 400) || code == 401 || code == 400 || code == 405) {
                 return "✅ متصل (" + ping + "ms)";
             }
             return "⚠️ کد " + code + " (" + ping + "ms)";
