@@ -29,8 +29,8 @@ android {
         applicationId "ir.nimasirex.aistatus"
         minSdk 24
         targetSdk 34
-        versionCode 6
-        versionName "1.4.1"
+        versionCode 7
+        versionName "1.5.0"
     }
     signingConfigs {
         release {
@@ -58,6 +58,34 @@ dependencies {
 }
 """,
 
+"app/src/main/res/drawable/ic_app_logo.xml": """<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M0,0h108v108h-108z"/>
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
+    <path
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="3.5"
+        android:pathData="M54,18A36,36 0,1 1,18 54A36,36 0,0 1,54 18z"/>
+    <path
+        android:strokeColor="#10B981"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M24,56 L38,56 L45,36 L55,74 L64,48 L71,56 L84,56"/>
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M54,27 L56,33 L62,35 L56,37 L54,43 L52,37 L46,35 L52,33 Z"/>
+</vector>
+""",
+
 "app/src/main/AndroidManifest.xml": """<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
@@ -65,21 +93,22 @@ dependencies {
     <application
         android:allowBackup="true"
         android:label="AI Status &amp; Ping"
-        android:icon="@android:drawable/ic_dialog_info"
+        android:icon="@drawable/ic_app_logo"
+        android:roundIcon="@drawable/ic_app_logo"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar">
+        android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".WidgetConfigActivity" android:exported="true" android:label="تنظیمات سرویس‌های ویجت">
+        <activity android:name=".WidgetConfigActivity" android:exported="true" android:label="تنظیمات ویجت">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
-        <receiver android:name=".StatusWidget" android:exported="true" android:label="ویجت وضعیت هوش مصنوعی">
+        <receiver android:name=".StatusWidget" android:exported="true" android:label="AI Status Widget">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="ir.nimasirex.aistatus.ACTION_REFRESH_WIDGET" />
@@ -92,16 +121,16 @@ dependencies {
 
 "app/src/main/res/xml/widget_info.xml": """<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="180dp"
+    android:minWidth="200dp"
     android:minHeight="110dp"
     android:targetCellWidth="3"
     android:targetCellHeight="2"
-    android:minResizeWidth="110dp"
-    android:minResizeHeight="60dp"
+    android:minResizeWidth="140dp"
+    android:minResizeHeight="70dp"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/widget_layout"
     android:previewLayout="@layout/widget_layout"
-    android:previewImage="@android:drawable/ic_dialog_info"
+    android:previewImage="@drawable/ic_app_logo"
     android:configure="ir.nimasirex.aistatus.WidgetConfigActivity"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
@@ -110,9 +139,9 @@ dependencies {
 
 "app/src/main/res/drawable/widget_bg.xml": """<?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="#E61E293B" />
-    <corners android:radius="16dp" />
-    <stroke android:width="1dp" android:color="#38BDF8" />
+    <solid android:color="#EB0F172A" />
+    <corners android:radius="20dp" />
+    <stroke android:width="1.5dp" android:color="#38BDF8" />
 </shape>
 """,
 
@@ -122,14 +151,40 @@ dependencies {
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="12dp"
+    android:padding="14dp"
     android:background="@drawable/widget_bg"
     android:layoutDirection="rtl">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-        <TextView android:id="@+id/widget_title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="وضعیت هوش مصنوعی" android:textColor="#38BDF8" android:textStyle="bold" android:textSize="13sp" />
-        <TextView android:id="@+id/widget_refresh_hint" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🔄 تست لحظه‌ای" android:textColor="#94A3B8" android:textSize="11sp" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⚡ رادار هوش مصنوعی"
+            android:textColor="#38BDF8"
+            android:textStyle="bold"
+            android:textSize="13sp" />
+        <TextView
+            android:id="@+id/widget_refresh_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔄 بروزرسانی"
+            android:textColor="#94A3B8"
+            android:textSize="11sp" />
     </LinearLayout>
-    <TextView android:id="@+id/widget_results" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="برای بررسی کلیک کنید..." android:textColor="#F8FAFC" android:textSize="12sp" android:lineSpacingExtra="3dp" />
+    <TextView
+        android:id="@+id/widget_results"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="برای تست لحظه‌ای ضربه بزنید..."
+        android:textColor="#F8FAFC"
+        android:textSize="12sp"
+        android:lineSpacingExtra="4dp" />
 </LinearLayout>
 """,
 
@@ -161,18 +216,18 @@ public class ServiceData {
         List<AIService> l = new ArrayList<>();
         l.add(new AIService("gem_web", CATEGORIES[0], "Gemini Web/App", "https://gemini.google.com/app", false));
         l.add(new AIService("ai_studio", CATEGORIES[0], "Google AI Studio", "https://aistudio.google.com", false));
-        l.add(new AIService("gem_api", CATEGORIES[0], "Gemini API (مستقیم)", "https://generativelanguage.googleapis.com/v1beta/models", true));
+        l.add(new AIService("gem_api", CATEGORIES[0], "Gemini API", "https://generativelanguage.googleapis.com/v1beta/models", true));
         l.add(new AIService("notebook_lm", CATEGORIES[0], "NotebookLM", "https://notebooklm.google.com", false));
-        l.add(new AIService("google_labs", CATEGORIES[0], "Google Labs (Imagen/Veo)", "https://labs.google/fx", false));
+        l.add(new AIService("google_labs", CATEGORIES[0], "Google Labs", "https://labs.google/fx", false));
         l.add(new AIService("vertex_ai", CATEGORIES[0], "Vertex AI", "https://console.cloud.google.com/vertex-ai", false));
-        l.add(new AIService("chatgpt_web", CATEGORIES[1], "ChatGPT Web/App", "https://chatgpt.com/backend-api/models", false));
+        l.add(new AIService("chatgpt_web", CATEGORIES[1], "ChatGPT Web", "https://chatgpt.com/backend-api/models", false));
         l.add(new AIService("openai_plat", CATEGORIES[1], "OpenAI Platform", "https://platform.openai.com", false));
         l.add(new AIService("openai_api", CATEGORIES[1], "OpenAI API", "https://api.openai.com/v1/models", false));
         l.add(new AIService("sora", CATEGORIES[1], "Sora Video AI", "https://sora.com", false));
-        l.add(new AIService("claude_web", CATEGORIES[2], "Claude Web/App", "https://claude.ai/api/organizations", false));
+        l.add(new AIService("claude_web", CATEGORIES[2], "Claude Web", "https://claude.ai/api/organizations", false));
         l.add(new AIService("claude_con", CATEGORIES[2], "Anthropic Console", "https://console.anthropic.com", false));
         l.add(new AIService("claude_api", CATEGORIES[2], "Claude API", "https://api.anthropic.com/v1/messages", false));
-        l.add(new AIService("perp_web", CATEGORIES[3], "Perplexity Web/App", "https://www.perplexity.ai", false));
+        l.add(new AIService("perp_web", CATEGORIES[3], "Perplexity Web", "https://www.perplexity.ai", false));
         l.add(new AIService("perp_api", CATEGORIES[3], "Perplexity API", "https://api.perplexity.ai", false));
         l.add(new AIService("ms_copilot", CATEGORIES[4], "Microsoft Copilot", "https://copilot.microsoft.com", false));
         l.add(new AIService("gh_copilot", CATEGORIES[4], "GitHub Copilot", "https://api.githubcopilot.com/_ping", false));
@@ -200,9 +255,8 @@ public class ServiceData {
         } catch (Exception e) { return ""; }
     }
 
-    private static boolean isGoogleAiGeoBlocked(String apiKey) {
+    private static boolean isGoogleAiGeoBlocked() {
         try {
-            // Check 1: NotebookLM strict geo redirect check
             HttpURLConnection nc = (HttpURLConnection) new URL("https://notebooklm.google.com").openConnection();
             nc.setConnectTimeout(4500);
             nc.setReadTimeout(4500);
@@ -212,19 +266,6 @@ public class ServiceData {
             String nUrl = nc.getURL().toString().toLowerCase();
             String nBody = readStream(nCode >= 400 ? nc.getErrorStream() : nc.getInputStream());
             if (nUrl.contains("unsupported") || nUrl.contains("region") || nUrl.contains("faq") || nBody.contains("not supported")) {
-                return true;
-            }
-
-            // Check 2: Generative Language API endpoint check
-            String probeUrl = apiKey.isEmpty()
-                ? "https://generativelanguage.googleapis.com/v1beta/models?key=AIzaSyDummyKeyForGeoCheck"
-                : "https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey;
-            HttpURLConnection gc = (HttpURLConnection) new URL(probeUrl).openConnection();
-            gc.setConnectTimeout(4500);
-            gc.setReadTimeout(4500);
-            int gCode = gc.getResponseCode();
-            String gBody = readStream(gCode >= 400 ? gc.getErrorStream() : gc.getInputStream());
-            if (gBody.contains("location is not supported") || gBody.contains("country") || gBody.contains("failed_precondition") || gCode == 403) {
                 return true;
             }
         } catch (Exception ignored) {}
@@ -250,9 +291,9 @@ public class ServiceData {
             String fu = c.getURL().toString().toLowerCase();
 
             if (s.category.equals(CATEGORIES[0]) && !s.id.equals("vertex_ai")) {
-                if (isGoogleAiGeoBlocked(key)) {
+                if (isGoogleAiGeoBlocked()) {
                     long ping = System.currentTimeMillis() - t0;
-                    return "⚠️ تحریم آی‌پی (کشور غیرمجاز) | " + ping + "ms";
+                    return "🟡 تحریم آی‌پی (" + ping + "ms)";
                 }
             }
 
@@ -267,22 +308,27 @@ public class ServiceData {
                 snip.contains("gradually expanding") ||
                 snip.contains("access denied") ||
                 snip.contains("error 1020")) {
-                return "⚠️ تحریم آی‌پی (کشور غیرمجاز) | " + ping + "ms";
+                return "🟡 تحریم آی‌پی (" + ping + "ms)";
+            }
+
+            // If Gemini API returns 403 only because API key is missing, but geo-check passed, it's open!
+            if (s.supportsApiKey && key.isEmpty() && (code == 403 || code == 400)) {
+                return "🟢 درگاه باز (" + ping + "ms)";
             }
 
             if (code == 403 || code == 451) {
-                return "⚠️ محدودیت آی‌پی (403) | " + ping + "ms";
+                return "🟡 محدودیت آی‌پی (" + ping + "ms)";
             }
 
             if (s.supportsApiKey && !key.isEmpty() && code == 200) {
-                return "✅ متصل با کلید (" + ping + "ms)";
+                return "🟢 متصل با کلید (" + ping + "ms)";
             }
 
             if ((code >= 200 && code < 400) || code == 401 || code == 400 || code == 405) {
-                return "✅ متصل (" + ping + "ms)";
+                return "🟢 متصل (" + ping + "ms)";
             }
-            return "⚠️ کد " + code + " (" + ping + "ms)";
-        } catch (Exception e) { return "❌ قطع / عدم دسترسی"; }
+            return "🟡 کد " + code + " (" + ping + "ms)";
+        } catch (Exception e) { return "🔴 قطع / عدم دسترسی"; }
     }
 }
 """,
@@ -290,6 +336,7 @@ public class ServiceData {
 "app/src/main/java/ir/nimasirex/aistatus/MainActivity.java": """package ir.nimasirex.aistatus;
 import android.content.*;
 import android.graphics.*;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.*;
 import android.widget.*;
@@ -304,50 +351,117 @@ public class MainActivity extends AppCompatActivity {
     private EditText apiIn;
     private final ExecutorService exec = Executors.newFixedThreadPool(6);
 
+    private GradientDrawable makeCard(String bgHex, String strokeHex, int radius) {
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(Color.parseColor(bgHex));
+        gd.setCornerRadius(radius);
+        if (strokeHex != null) gd.setStroke(2, Color.parseColor(strokeHex));
+        return gd;
+    }
+
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
-        ScrollView sv = new ScrollView(this); sv.setBackgroundColor(Color.parseColor("#0F172A"));
-        LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(36, 36, 36, 48); root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        ScrollView sv = new ScrollView(this);
+        sv.setBackgroundColor(Color.parseColor("#0B1120"));
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(40, 64, 40, 64);
+        root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         sv.addView(root);
 
-        TextView h = new TextView(this); h.setText("پینگ‌سنج و وضعیت سرورهای هوش مصنوعی");
-        h.setTextColor(Color.parseColor("#38BDF8")); h.setTextSize(18); h.setTypeface(null, Typeface.BOLD);
-        h.setGravity(Gravity.CENTER); root.addView(h);
+        // Header Card
+        LinearLayout headerCard = new LinearLayout(this);
+        headerCard.setOrientation(LinearLayout.VERTICAL);
+        headerCard.setPadding(36, 36, 36, 36);
+        headerCard.setBackground(makeCard("#1E293B", "#38BDF8", 32));
+        root.addView(headerCard);
+
+        TextView h = new TextView(this);
+        h.setText("⚡ رادار و پینگ‌سنج هوش مصنوعی");
+        h.setTextColor(Color.parseColor("#38BDF8"));
+        h.setTextSize(19);
+        h.setTypeface(null, Typeface.BOLD);
+        h.setGravity(Gravity.CENTER);
+        headerCard.addView(h);
+
+        TextView sub = new TextView(this);
+        sub.setText("بررسی دقیق اتصال، پینگ و محدودیت آی‌پی سرورهای AI");
+        sub.setTextColor(Color.parseColor("#94A3B8"));
+        sub.setTextSize(12);
+        sub.setGravity(Gravity.CENTER);
+        sub.setPadding(0, 10, 0, 24);
+        headerCard.addView(sub);
 
         Button wBtn = new Button(this);
-        wBtn.setText("➕ افزودن و تنظیم ویجت روی صفحه اصلی");
-        wBtn.setBackgroundColor(Color.parseColor("#10B981"));
+        wBtn.setText("➕ تنظیم و افزودن ویجت به صفحه اصلی");
         wBtn.setTextColor(Color.WHITE);
-        LinearLayout.LayoutParams wp = new LinearLayout.LayoutParams(-1, -2);
-        wp.setMargins(0, 24, 0, 12);
-        root.addView(wBtn, wp);
+        wBtn.setTypeface(null, Typeface.BOLD);
+        wBtn.setBackground(makeCard("#059669", null, 24));
+        headerCard.addView(wBtn);
         wBtn.setOnClickListener(v -> startActivity(new Intent(this, WidgetConfigActivity.class)));
 
-        TextView sh = new TextView(this); sh.setText("۱. خانواده‌های مورد نظر را انتخاب کنید:");
-        sh.setTextColor(Color.parseColor("#E2E8F0")); sh.setPadding(0, 20, 0, 10); root.addView(sh);
+        // Categories Card
+        LinearLayout catCard = new LinearLayout(this);
+        catCard.setOrientation(LinearLayout.VERTICAL);
+        catCard.setPadding(32, 28, 32, 28);
+        catCard.setBackground(makeCard("#1E293B", "#334155", 28));
+        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, -2);
+        cp.setMargins(0, 28, 0, 28);
+        root.addView(catCard, cp);
+
+        TextView sh = new TextView(this);
+        sh.setText("۱. سرویس‌های مورد نظر برای تست:");
+        sh.setTextColor(Color.parseColor("#F8FAFC"));
+        sh.setTypeface(null, Typeface.BOLD);
+        sh.setPadding(0, 0, 0, 12);
+        catCard.addView(sh);
 
         for (int i = 0; i < ServiceData.CATEGORIES.length; i++) {
-            CheckBox cb = new CheckBox(this); cb.setText(ServiceData.CATEGORIES[i]);
-            cb.setTextColor(Color.WHITE); cb.setChecked(i == 0);
-            catBoxes.add(cb); root.addView(cb);
+            CheckBox cb = new CheckBox(this);
+            cb.setText(ServiceData.CATEGORIES[i]);
+            cb.setTextColor(Color.parseColor("#E2E8F0"));
+            cb.setChecked(i == 0);
+            catBoxes.add(cb);
+            catCard.addView(cb);
         }
 
-        TextView at = new TextView(this); at.setText("🔑 کلید اختصاصی Gemini API Key (اختیاری):");
-        at.setTextColor(Color.parseColor("#94A3B8")); at.setPadding(0, 20, 0, 6); root.addView(at);
+        // API Key Card
+        LinearLayout apiCard = new LinearLayout(this);
+        apiCard.setOrientation(LinearLayout.VERTICAL);
+        apiCard.setPadding(32, 24, 32, 24);
+        apiCard.setBackground(makeCard("#1E293B", "#334155", 28));
+        root.addView(apiCard);
+
+        TextView at = new TextView(this);
+        at.setText("🔑 کلید اختصاصی Gemini API (اختیاری):");
+        at.setTextColor(Color.parseColor("#94A3B8"));
+        at.setTextSize(13);
+        apiCard.addView(at);
 
         SharedPreferences prefs = getSharedPreferences("AIPrefs", MODE_PRIVATE);
-        apiIn = new EditText(this); apiIn.setHint("بدون کلید هم تست تحریم انجام می‌شود...");
-        apiIn.setHintTextColor(Color.parseColor("#64748B")); apiIn.setTextColor(Color.WHITE);
-        apiIn.setText(prefs.getString("gemini_api_key", "")); root.addView(apiIn);
+        apiIn = new EditText(this);
+        apiIn.setHint("بدون کلید هم تست تحریم انجام می‌شود...");
+        apiIn.setHintTextColor(Color.parseColor("#64748B"));
+        apiIn.setTextColor(Color.WHITE);
+        apiIn.setTextSize(13);
+        apiIn.setText(prefs.getString("gemini_api_key", ""));
+        apiCard.addView(apiIn);
 
-        Button btn = new Button(this); btn.setText("🚀 شروع تست سرویس‌های انتخابی");
-        btn.setBackgroundColor(Color.parseColor("#0284C7")); btn.setTextColor(Color.WHITE);
+        // Start Test Button
+        Button btn = new Button(this);
+        btn.setText("🚀 شروع تست هوشمند سرویس‌ها");
+        btn.setTextColor(Color.WHITE);
+        btn.setTextSize(15);
+        btn.setTypeface(null, Typeface.BOLD);
+        btn.setBackground(makeCard("#0284C7", null, 26));
         LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, -2);
-        bp.setMargins(0, 16, 0, 16);
+        bp.setMargins(0, 32, 0, 24);
         root.addView(btn, bp);
 
-        resBox = new LinearLayout(this); resBox.setOrientation(LinearLayout.VERTICAL); root.addView(resBox);
+        resBox = new LinearLayout(this);
+        resBox.setOrientation(LinearLayout.VERTICAL);
+        root.addView(resBox);
+
         btn.setOnClickListener(v -> runTests());
         setContentView(sv);
     }
@@ -360,26 +474,46 @@ public class MainActivity extends AppCompatActivity {
         if (sel.isEmpty()) { Toast.makeText(this, "حداقل یک دسته را انتخاب کنید", Toast.LENGTH_SHORT).show(); return; }
 
         for (String cat : sel) {
-            TextView ch = new TextView(this); ch.setText("▪ " + cat);
-            ch.setTextColor(Color.parseColor("#38BDF8")); ch.setTypeface(null, Typeface.BOLD);
-            ch.setPadding(0, 20, 0, 8); resBox.addView(ch);
+            TextView ch = new TextView(this);
+            ch.setText("▪ " + cat);
+            ch.setTextColor(Color.parseColor("#38BDF8"));
+            ch.setTypeface(null, Typeface.BOLD);
+            ch.setPadding(8, 24, 8, 12);
+            resBox.addView(ch);
 
             for (ServiceData.AIService s : ServiceData.getAllServices()) {
                 if (s.category.equals(cat)) {
-                    LinearLayout row = new LinearLayout(this); row.setPadding(16, 14, 16, 14);
-                    row.setBackgroundColor(Color.parseColor("#1E293B"));
-                    TextView nt = new TextView(this); nt.setText(s.name); nt.setTextColor(Color.WHITE);
+                    LinearLayout row = new LinearLayout(this);
+                    row.setPadding(28, 22, 28, 22);
+                    row.setGravity(Gravity.CENTER_VERTICAL);
+                    row.setBackground(makeCard("#1E293B", "#334155", 20));
+                    LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
+                    rp.setMargins(0, 0, 0, 14);
+
+                    TextView nt = new TextView(this);
+                    nt.setText(s.name);
+                    nt.setTextColor(Color.WHITE);
+                    nt.setTypeface(null, Typeface.BOLD);
+                    nt.setTextSize(13);
                     nt.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1f));
-                    TextView st = new TextView(this); st.setText("⏳ در حال تست..."); st.setTextColor(Color.YELLOW);
-                    row.addView(nt); row.addView(st); resBox.addView(row);
+
+                    TextView st = new TextView(this);
+                    st.setText("⏳ در حال تست...");
+                    st.setTextColor(Color.parseColor("#FACC15"));
+                    st.setTextSize(12);
+
+                    row.addView(nt);
+                    row.addView(st);
+                    resBox.addView(row, rp);
                     resViews.put(s.id, st);
+
                     exec.execute(() -> {
                         String r = ServiceData.checkService(MainActivity.this, s);
                         runOnUiThread(() -> {
                             TextView tv = resViews.get(s.id);
                             if (tv != null) {
                                 tv.setText(r);
-                                tv.setTextColor(r.startsWith("✅") ? Color.parseColor("#4ADE80") : r.startsWith("⚠️") ? Color.parseColor("#FACC15") : Color.parseColor("#F87171"));
+                                tv.setTextColor(r.startsWith("🟢") ? Color.parseColor("#4ADE80") : r.startsWith("🟡") ? Color.parseColor("#FACC15") : Color.parseColor("#F87171"));
                             }
                         });
                     });
@@ -394,6 +528,7 @@ public class MainActivity extends AppCompatActivity {
 import android.appwidget.AppWidgetManager;
 import android.content.*;
 import android.graphics.*;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -410,12 +545,13 @@ public class WidgetConfigActivity extends AppCompatActivity {
         Bundle ex = getIntent().getExtras();
         if (ex != null) widgetId = ex.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
 
-        ScrollView sv = new ScrollView(this); sv.setBackgroundColor(Color.parseColor("#0F172A"));
+        ScrollView sv = new ScrollView(this); sv.setBackgroundColor(Color.parseColor("#0B1120"));
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(36, 36, 36, 48); root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL); sv.addView(root);
+        root.setPadding(40, 60, 40, 60); root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL); sv.addView(root);
 
-        TextView t = new TextView(this); t.setText("کدام سرویس‌ها روی ویجت نمایش داده شوند؟");
-        t.setTextColor(Color.parseColor("#38BDF8")); t.setTextSize(16); t.setTypeface(null, Typeface.BOLD); root.addView(t);
+        TextView t = new TextView(this); t.setText("انتخاب سرویس‌های ویجت صفحه اصلی");
+        t.setTextColor(Color.parseColor("#38BDF8")); t.setTextSize(17); t.setTypeface(null, Typeface.BOLD);
+        t.setPadding(0, 0, 0, 16); root.addView(t);
 
         Set<String> saved = getSharedPreferences("WidgetPrefs", MODE_PRIVATE).getStringSet("w_default", null);
 
@@ -423,17 +559,25 @@ public class WidgetConfigActivity extends AppCompatActivity {
         for (ServiceData.AIService s : ServiceData.getAllServices()) {
             if (!s.category.equals(cur)) {
                 cur = s.category;
-                TextView ct = new TextView(this); ct.setText(cur); ct.setTextColor(Color.parseColor("#94A3B8"));
-                ct.setPadding(0, 18, 0, 4); root.addView(ct);
+                TextView ct = new TextView(this); ct.setText("▪ " + cur); ct.setTextColor(Color.parseColor("#38BDF8"));
+                ct.setTypeface(null, Typeface.BOLD); ct.setPadding(0, 22, 0, 6); root.addView(ct);
             }
             CheckBox cb = new CheckBox(this); cb.setText(s.name); cb.setTag(s.id); cb.setTextColor(Color.WHITE);
             if (saved != null) cb.setChecked(saved.contains(s.id));
-            else if (s.id.equals("gem_web") || s.id.equals("gem_api")) cb.setChecked(true);
+            else if (s.id.equals("gem_web") || s.id.equals("chatgpt_web") || s.id.equals("grok_ai")) cb.setChecked(true);
             boxes.add(cb); root.addView(cb);
         }
 
-        Button btn = new Button(this); btn.setText("✅ ذخیره و افزودن ویجت به صفحه اصلی");
-        btn.setBackgroundColor(Color.parseColor("#10B981")); btn.setTextColor(Color.WHITE); root.addView(btn);
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(Color.parseColor("#059669"));
+        gd.setCornerRadius(24);
+
+        Button btn = new Button(this); btn.setText("✅ ذخیره و بروزرسانی ویجت");
+        btn.setBackground(gd); btn.setTextColor(Color.WHITE); btn.setTypeface(null, Typeface.BOLD);
+        LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, -2);
+        bp.setMargins(0, 32, 0, 16);
+        root.addView(btn, bp);
+
         btn.setOnClickListener(v -> {
             Set<String> ids = new HashSet<>();
             for (CheckBox cb : boxes) if (cb.isChecked()) ids.add((String) cb.getTag());
@@ -453,11 +597,11 @@ public class WidgetConfigActivity extends AppCompatActivity {
                 setResult(RESULT_OK, res); finish();
             } else {
                 int[] existing = m.getAppWidgetIds(cn);
-                for (int id : existing) StatusWidget.updateAppWidget(this, m, id);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && m.isRequestPinAppWidgetSupported()) {
+                if (existing != null && existing.length > 0) {
+                    for (int id : existing) StatusWidget.updateAppWidget(this, m, id);
+                    Toast.makeText(this, "ویجت شما روی صفحه اصلی بروزرسانی شد!", Toast.LENGTH_SHORT).show();
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && m.isRequestPinAppWidgetSupported()) {
                     m.requestPinAppWidget(cn, null, null);
-                } else {
-                    Toast.makeText(this, "ذخیره شد! ویجت را از صفحه اصلی اضافه کنید.", Toast.LENGTH_LONG).show();
                 }
                 finish();
             }
@@ -493,7 +637,7 @@ public class StatusWidget extends AppWidgetProvider {
     }
     public static void updateAppWidget(Context c, AppWidgetManager m, int id) {
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_layout);
-        v.setTextViewText(R.id.widget_results, "⏳ در حال بررسی لحظه‌ای سرورها...");
+        v.setTextViewText(R.id.widget_results, "⏳ در حال تست لحظه‌ای سرورها...");
         Intent i = new Intent(c, StatusWidget.class); i.setAction(ACT); i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
         PendingIntent pi = PendingIntent.getBroadcast(c, id, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         v.setOnClickPendingIntent(R.id.widget_root, pi);
@@ -503,12 +647,14 @@ public class StatusWidget extends AppWidgetProvider {
             SharedPreferences p = c.getSharedPreferences("WidgetPrefs", Context.MODE_PRIVATE);
             Set<String> ids = p.getStringSet("w_" + id, null);
             if (ids == null || ids.isEmpty()) ids = p.getStringSet("w_default", null);
-            if (ids == null || ids.isEmpty()) ids = new HashSet<>(Arrays.asList("gem_web", "gem_api"));
+            if (ids == null || ids.isEmpty()) ids = new HashSet<>(Arrays.asList("gem_web", "chatgpt_web", "grok_ai"));
             StringBuilder sb = new StringBuilder();
             for (ServiceData.AIService s : ServiceData.getAllServices()) {
                 if (ids.contains(s.id)) {
                     if (sb.length() > 0) sb.append("\\n");
-                    sb.append("• ").append(s.name).append(": ").append(ServiceData.checkService(c, s));
+                    // Use Left-to-Right mark and clean separator so English & Persian never break lines awkwardly
+                    String status = ServiceData.checkService(c, s);
+                    sb.append(status).append("  ⬅  ").append(s.name);
                 }
             }
             RemoteViews uv = new RemoteViews(c.getPackageName(), R.layout.widget_layout);
