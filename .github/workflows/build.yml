@@ -5,6 +5,9 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,13 +29,18 @@ jobs:
       - name: Generate Project & Build Signed APK
         run: |
           python3 setup_project.py
-          gradle wrapper --gradle-version 8.4
-          chmod +x gradlew
-          keytool -genkey -v -keystore release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key -storepass 123456 -keypass 123456 -dname "CN=NimaJafari, OU=Sirex, O=SirexNJ, L=Qazvin, S=Qazvin, C=IR"
-          ./gradlew assembleRelease --no-daemon
+          if [ ! -f "release-key.jks" ]; then
+            keytool -genkey -v -keystore release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key -storepass 123456 -keypass 123456 -dname "CN=NimaJafari, OU=Sirex, O=SirexNJ, L=Qazvin, S=Qazvin, C=IR"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add release-key.jks
+            git commit -m "Save permanent release keystore"
+            git push
+          fi
+          gradle assembleRelease --no-daemon
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: AI-Status-Checker-Signed-APK
-          path: app/build/outputs/apk/**/*.apk
+          path: app/build/outputs/apk/release/*.apk
