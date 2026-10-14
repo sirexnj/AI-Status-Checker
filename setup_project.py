@@ -29,8 +29,8 @@ android {
         applicationId "ir.nimasirex.aistatus"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "1.0.0"
+        versionCode 2
+        versionName "1.1.0"
     }
     signingConfigs {
         release {
@@ -74,7 +74,7 @@ dependencies {
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".WidgetConfigActivity" android:exported="true" android:label="انتخاب سرویس‌های ویجت">
+        <activity android:name=".WidgetConfigActivity" android:exported="true" android:label="تنظیمات سرویس‌های ویجت">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
@@ -94,18 +94,25 @@ dependencies {
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="180dp"
     android:minHeight="110dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="60dp"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/widget_layout"
+    android:previewLayout="@layout/widget_layout"
+    android:previewImage="@android:drawable/ic_dialog_info"
     android:configure="ir.nimasirex.aistatus.WidgetConfigActivity"
     android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen" />
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable" />
 """,
 
 "app/src/main/res/drawable/widget_bg.xml": """<?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <solid android:color="#E61E293B" />
     <corners android:radius="16dp" />
-    <stroke android:width="1dp" android:color="#475569" />
+    <stroke android:width="1dp" android:color="#38BDF8" />
 </shape>
 """,
 
@@ -209,7 +216,7 @@ public class ServiceData {
 """,
 
 "app/src/main/java/ir/nimasirex/aistatus/MainActivity.java": """package ir.nimasirex.aistatus;
-import android.content.SharedPreferences;
+import android.content.*;
 import android.graphics.*;
 import android.os.Bundle;
 import android.view.*;
@@ -236,8 +243,17 @@ public class MainActivity extends AppCompatActivity {
         h.setTextColor(Color.parseColor("#38BDF8")); h.setTextSize(18); h.setTypeface(null, Typeface.BOLD);
         h.setGravity(Gravity.CENTER); root.addView(h);
 
+        Button wBtn = new Button(this);
+        wBtn.setText("➕ افزودن و تنظیم ویجت روی صفحه اصلی");
+        wBtn.setBackgroundColor(Color.parseColor("#10B981"));
+        wBtn.setTextColor(Color.WHITE);
+        LinearLayout.LayoutParams wp = new LinearLayout.LayoutParams(-1, -2);
+        wp.setMargins(0, 24, 0, 12);
+        root.addView(wBtn, wp);
+        wBtn.setOnClickListener(v -> startActivity(new Intent(this, WidgetConfigActivity.class)));
+
         TextView sh = new TextView(this); sh.setText("۱. خانواده‌های مورد نظر را انتخاب کنید:");
-        sh.setTextColor(Color.parseColor("#E2E8F0")); sh.setPadding(0, 24, 0, 10); root.addView(sh);
+        sh.setTextColor(Color.parseColor("#E2E8F0")); sh.setPadding(0, 20, 0, 10); root.addView(sh);
 
         for (int i = 0; i < ServiceData.CATEGORIES.length; i++) {
             CheckBox cb = new CheckBox(this); cb.setText(ServiceData.CATEGORIES[i]);
@@ -255,7 +271,9 @@ public class MainActivity extends AppCompatActivity {
 
         Button btn = new Button(this); btn.setText("🚀 شروع تست سرویس‌های انتخابی");
         btn.setBackgroundColor(Color.parseColor("#0284C7")); btn.setTextColor(Color.WHITE);
-        root.addView(btn);
+        LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, -2);
+        bp.setMargins(0, 16, 0, 16);
+        root.addView(btn, bp);
 
         resBox = new LinearLayout(this); resBox.setOrientation(LinearLayout.VERTICAL); root.addView(resBox);
         btn.setOnClickListener(v -> runTests());
@@ -304,6 +322,7 @@ public class MainActivity extends AppCompatActivity {
 import android.appwidget.AppWidgetManager;
 import android.content.*;
 import android.graphics.*;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.*;
@@ -318,7 +337,6 @@ public class WidgetConfigActivity extends AppCompatActivity {
         super.onCreate(b); setResult(RESULT_CANCELED);
         Bundle ex = getIntent().getExtras();
         if (ex != null) widgetId = ex.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
-        if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID) { finish(); return; }
 
         ScrollView sv = new ScrollView(this); sv.setBackgroundColor(Color.parseColor("#0F172A"));
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL);
@@ -326,6 +344,8 @@ public class WidgetConfigActivity extends AppCompatActivity {
 
         TextView t = new TextView(this); t.setText("کدام سرویس‌ها روی ویجت نمایش داده شوند؟");
         t.setTextColor(Color.parseColor("#38BDF8")); t.setTextSize(16); t.setTypeface(null, Typeface.BOLD); root.addView(t);
+
+        Set<String> saved = getSharedPreferences("WidgetPrefs", MODE_PRIVATE).getStringSet("w_default", null);
 
         String cur = "";
         for (ServiceData.AIService s : ServiceData.getAllServices()) {
@@ -335,20 +355,40 @@ public class WidgetConfigActivity extends AppCompatActivity {
                 ct.setPadding(0, 18, 0, 4); root.addView(ct);
             }
             CheckBox cb = new CheckBox(this); cb.setText(s.name); cb.setTag(s.id); cb.setTextColor(Color.WHITE);
-            if (s.id.equals("gem_web") || s.id.equals("gem_api")) cb.setChecked(true);
+            if (saved != null) cb.setChecked(saved.contains(s.id));
+            else if (s.id.equals("gem_web") || s.id.equals("gem_api")) cb.setChecked(true);
             boxes.add(cb); root.addView(cb);
         }
 
-        Button btn = new Button(this); btn.setText("✅ ساخت ویجت روی صفحه");
+        Button btn = new Button(this); btn.setText("✅ ذخیره و افزودن ویجت به صفحه اصلی");
         btn.setBackgroundColor(Color.parseColor("#10B981")); btn.setTextColor(Color.WHITE); root.addView(btn);
         btn.setOnClickListener(v -> {
             Set<String> ids = new HashSet<>();
             for (CheckBox cb : boxes) if (cb.isChecked()) ids.add((String) cb.getTag());
             if (ids.isEmpty()) { Toast.makeText(this, "حداقل یک سرویس انتخاب کنید", Toast.LENGTH_SHORT).show(); return; }
-            getSharedPreferences("WidgetPrefs", MODE_PRIVATE).edit().putStringSet("w_" + widgetId, ids).apply();
-            StatusWidget.updateAppWidget(this, AppWidgetManager.getInstance(this), widgetId);
-            Intent res = new Intent(); res.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId);
-            setResult(RESULT_OK, res); finish();
+
+            SharedPreferences.Editor ed = getSharedPreferences("WidgetPrefs", MODE_PRIVATE).edit();
+            ed.putStringSet("w_default", ids);
+            if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) ed.putStringSet("w_" + widgetId, ids);
+            ed.apply();
+
+            AppWidgetManager m = AppWidgetManager.getInstance(this);
+            ComponentName cn = new ComponentName(this, StatusWidget.class);
+
+            if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                StatusWidget.updateAppWidget(this, m, widgetId);
+                Intent res = new Intent(); res.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId);
+                setResult(RESULT_OK, res); finish();
+            } else {
+                int[] existing = m.getAppWidgetIds(cn);
+                for (int id : existing) StatusWidget.updateAppWidget(this, m, id);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && m.isRequestPinAppWidgetSupported()) {
+                    m.requestPinAppWidget(cn, null, null);
+                } else {
+                    Toast.makeText(this, "ذخیره شد! ویجت را از صفحه اصلی اضافه کنید.", Toast.LENGTH_LONG).show();
+                }
+                finish();
+            }
         });
         setContentView(sv);
     }
@@ -372,7 +412,11 @@ public class StatusWidget extends AppWidgetProvider {
         super.onReceive(c, i);
         if (ACT.equals(i.getAction())) {
             int id = i.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
-            if (id != AppWidgetManager.INVALID_APPWIDGET_ID) updateAppWidget(c, AppWidgetManager.getInstance(c), id);
+            AppWidgetManager m = AppWidgetManager.getInstance(c);
+            if (id != AppWidgetManager.INVALID_APPWIDGET_ID) updateAppWidget(c, m, id);
+            else {
+                for (int wid : m.getAppWidgetIds(new ComponentName(c, StatusWidget.class))) updateAppWidget(c, m, wid);
+            }
         }
     }
     public static void updateAppWidget(Context c, AppWidgetManager m, int id) {
@@ -384,7 +428,9 @@ public class StatusWidget extends AppWidgetProvider {
         m.updateAppWidget(id, v);
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            Set<String> ids = c.getSharedPreferences("WidgetPrefs", Context.MODE_PRIVATE).getStringSet("w_" + id, null);
+            SharedPreferences p = c.getSharedPreferences("WidgetPrefs", Context.MODE_PRIVATE);
+            Set<String> ids = p.getStringSet("w_" + id, null);
+            if (ids == null || ids.isEmpty()) ids = p.getStringSet("w_default", null);
             if (ids == null || ids.isEmpty()) ids = new HashSet<>(Arrays.asList("gem_web", "gem_api"));
             StringBuilder sb = new StringBuilder();
             for (ServiceData.AIService s : ServiceData.getAllServices()) {
