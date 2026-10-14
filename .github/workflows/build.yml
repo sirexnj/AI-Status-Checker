@@ -26,11 +26,13 @@ jobs:
       - name: Generate Project & Build Signed APK
         run: |
           python3 setup_project.py
+          gradle wrapper --gradle-version 8.4
+          chmod +x gradlew
           keytool -genkey -v -keystore release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key -storepass 123456 -keypass 123456 -dname "CN=NimaJafari, OU=Sirex, O=SirexNJ, L=Qazvin, S=Qazvin, C=IR"
-          gradle assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: AI-Status-Checker-Signed-APK
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/**/*.apk
