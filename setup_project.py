@@ -29,8 +29,8 @@ android {
         applicationId "ir.nimasirex.aistatus"
         minSdk 24
         targetSdk 34
-        versionCode 2
-        versionName "1.1.0"
+        versionCode 3
+        versionName "1.2.0"
     }
     signingConfigs {
         release {
@@ -159,56 +159,99 @@ public class ServiceData {
     };
     public static List<AIService> getAllServices() {
         List<AIService> l = new ArrayList<>();
-        l.add(new AIService("gem_web", CATEGORIES[0], "Gemini Web/App", "https://gemini.google.com", false));
-        l.add(new AIService("ai_studio", CATEGORIES[0], "Google AI Studio", "https://aistudio.google.com", false));
-        l.add(new AIService("gem_api", CATEGORIES[0], "Gemini API (مستقیم)", "https://generativelanguage.googleapis.com", true));
+        l.add(new AIService("gem_web", CATEGORIES[0], "Gemini Web/App", "https://gemini.google.com/app", false));
+        l.add(new AIService("ai_studio", CATEGORIES[0], "Google AI Studio", "https://alkalimakersuite-pa.clients6.google.com/$rpc/google.internal.alkali.applications.makersuite.v1.MakerSuiteService/ListModels", false));
+        l.add(new AIService("gem_api", CATEGORIES[0], "Gemini API (مستقیم)", "https://generativelanguage.googleapis.com/v1beta/models", true));
         l.add(new AIService("notebook_lm", CATEGORIES[0], "NotebookLM", "https://notebooklm.google.com", false));
-        l.add(new AIService("google_labs", CATEGORIES[0], "Google Labs (Imagen/Veo)", "https://labs.google", false));
-        l.add(new AIService("vertex_ai", CATEGORIES[0], "Vertex AI", "https://cloud.google.com/vertex-ai", false));
-        l.add(new AIService("chatgpt_web", CATEGORIES[1], "ChatGPT Web/App", "https://chatgpt.com", false));
-        l.add(new AIService("openai_plat", CATEGORIES[1], "OpenAI Platform", "https://platform.openai.com", false));
-        l.add(new AIService("openai_api", CATEGORIES[1], "OpenAI API", "https://api.openai.com", false));
+        l.add(new AIService("google_labs", CATEGORIES[0], "Google Labs (Imagen/Veo)", "https://labs.google/fx", false));
+        l.add(new AIService("vertex_ai", CATEGORIES[0], "Vertex AI", "https://console.cloud.google.com/vertex-ai", false));
+        l.add(new AIService("chatgpt_web", CATEGORIES[1], "ChatGPT Web/App", "https://chatgpt.com/backend-api/models", false));
+        l.add(new AIService("openai_plat", CATEGORIES[1], "OpenAI Platform", "https://api.openai.com/dashboard/onboarding/login", false));
+        l.add(new AIService("openai_api", CATEGORIES[1], "OpenAI API", "https://api.openai.com/v1/models", false));
         l.add(new AIService("sora", CATEGORIES[1], "Sora Video AI", "https://sora.com", false));
-        l.add(new AIService("claude_web", CATEGORIES[2], "Claude Web/App", "https://claude.ai", false));
+        l.add(new AIService("claude_web", CATEGORIES[2], "Claude Web/App", "https://claude.ai/api/organizations", false));
         l.add(new AIService("claude_con", CATEGORIES[2], "Anthropic Console", "https://console.anthropic.com", false));
-        l.add(new AIService("claude_api", CATEGORIES[2], "Claude API", "https://api.anthropic.com", false));
+        l.add(new AIService("claude_api", CATEGORIES[2], "Claude API", "https://api.anthropic.com/v1/messages", false));
         l.add(new AIService("perp_web", CATEGORIES[3], "Perplexity Web/App", "https://www.perplexity.ai", false));
         l.add(new AIService("perp_api", CATEGORIES[3], "Perplexity API", "https://api.perplexity.ai", false));
         l.add(new AIService("ms_copilot", CATEGORIES[4], "Microsoft Copilot", "https://copilot.microsoft.com", false));
-        l.add(new AIService("gh_copilot", CATEGORIES[4], "GitHub Copilot", "https://github.com/features/copilot", false));
-        l.add(new AIService("grok_ai", CATEGORIES[5], "Grok (xAI)", "https://x.ai", false));
+        l.add(new AIService("gh_copilot", CATEGORIES[4], "GitHub Copilot", "https://api.githubcopilot.com/_ping", false));
+        l.add(new AIService("grok_ai", CATEGORIES[5], "Grok (xAI)", "https://grok.com", false));
         l.add(new AIService("meta_ai", CATEGORIES[5], "Meta AI (Llama)", "https://www.meta.ai", false));
         l.add(new AIService("deepseek", CATEGORIES[6], "DeepSeek Chat", "https://chat.deepseek.com", false));
         l.add(new AIService("huggingface", CATEGORIES[6], "Hugging Face", "https://huggingface.co", false));
-        l.add(new AIService("elevenlabs", CATEGORIES[6], "ElevenLabs Audio", "https://elevenlabs.io", false));
-        l.add(new AIService("replicate", CATEGORIES[6], "Replicate Cloud", "https://replicate.com", false));
+        l.add(new AIService("elevenlabs", CATEGORIES[6], "ElevenLabs Audio", "https://api.elevenlabs.io/v1/voices", false));
+        l.add(new AIService("replicate", CATEGORIES[6], "Replicate Cloud", "https://api.replicate.com/v1/models", false));
         return l;
     }
+
+    private static String readStream(InputStream is) {
+        if (is == null) return "";
+        try {
+            BufferedReader r = new BufferedReader(new InputStreamReader(is));
+            StringBuilder sb = new StringBuilder();
+            char[] b = new char[4096];
+            int n;
+            while ((n = r.read(b)) != -1 && sb.length() < 65000) {
+                sb.append(b, 0, n);
+            }
+            r.close();
+            return sb.toString().toLowerCase();
+        } catch (Exception e) { return ""; }
+    }
+
     public static String checkService(Context ctx, AIService s) {
         SharedPreferences p = ctx.getSharedPreferences("AIPrefs", Context.MODE_PRIVATE);
         String key = p.getString("gemini_api_key", "").trim();
         long t0 = System.currentTimeMillis();
         try {
-            String u = (s.supportsApiKey && !key.isEmpty()) ? "https://generativelanguage.googleapis.com/v1beta/models?key=" + key : s.url;
-            HttpURLConnection c = (HttpURLConnection) new URL(u).openConnection();
+            // Check Google Geo/Country restriction directly for Google services
+            if (s.category.equals(CATEGORIES[0])) {
+                String apiTestUrl = key.isEmpty()
+                    ? "https://generativelanguage.googleapis.com/v1beta/models"
+                    : "https://generativelanguage.googleapis.com/v1beta/models?key=" + key;
+                HttpURLConnection gc = (HttpURLConnection) new URL(apiTestUrl).openConnection();
+                gc.setConnectTimeout(5000); gc.setReadTimeout(5000);
+                int gCode = gc.getResponseCode();
+                String gBody = readStream(gCode >= 400 ? gc.getErrorStream() : gc.getInputStream());
+                if (gBody.contains("user location is not supported") || gBody.contains("failed_precondition")) {
+                    long ping = System.currentTimeMillis() - t0;
+                    return "⚠️ تحریم آی‌پی (کشور پشتیبانی نمی‌شود) | " + ping + "ms";
+                }
+                if (s.supportsApiKey && !key.isEmpty() && gCode == 200) {
+                    long ping = System.currentTimeMillis() - t0;
+                    return "✅ متصل (تایید با API Key) | " + ping + "ms";
+                }
+            }
+
+            HttpURLConnection c = (HttpURLConnection) new URL(s.url).openConnection();
             c.setConnectTimeout(6500); c.setReadTimeout(6500); c.setInstanceFollowRedirects(true);
-            c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) Chrome/122.0.0.0 Mobile");
+            c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36");
             int code = c.getResponseCode();
             long ping = System.currentTimeMillis() - t0;
             String fu = c.getURL().toString().toLowerCase();
-            if (fu.contains("unsupported") || fu.contains("region") || fu.contains("faq")) return "⚠️ محدودیت آی‌پی | " + ping + "ms";
-            String snip = "";
-            try {
-                InputStream is = (code >= 400) ? c.getErrorStream() : c.getInputStream();
-                if (is != null) {
-                    BufferedReader r = new BufferedReader(new InputStreamReader(is));
-                    char[] b = new char[1024]; int n = r.read(b); r.close();
-                    if (n > 0) snip = new String(b, 0, n).toLowerCase();
-                }
-            } catch (Exception ignored) {}
-            if (code == 403 || code == 451 || snip.contains("not supported") || snip.contains("unsupported_country")) return "⚠️ محدودیت آی‌پی (403) | " + ping + "ms";
-            if (s.supportsApiKey && key.isEmpty() && (code == 400 || code == 404 || code == 401)) return "✅ درگاه باز (" + ping + "ms)";
-            if ((code >= 200 && code < 400) || code == 401 || code == 405) return "✅ متصل (" + ping + "ms)";
+
+            if (fu.contains("unsupported") || fu.contains("region") || fu.contains("faq") || fu.contains("unavailable")) {
+                return "⚠️ محدودیت آی‌پی (ریدایرکت تحریم) | " + ping + "ms";
+            }
+
+            String snip = readStream(code >= 400 ? c.getErrorStream() : c.getInputStream());
+
+            if (code == 403 || code == 451 ||
+                snip.contains("country isn't supported") ||
+                snip.contains("location is not supported") ||
+                snip.contains("gradually expanding") ||
+                snip.contains("not available in your country") ||
+                snip.contains("unsupported_country") ||
+                snip.contains("region_not_supported") ||
+                snip.contains("access denied") ||
+                snip.contains("error 1020")) {
+                return "⚠️ محدودیت آی‌پی (تحریم) | " + ping + "ms";
+            }
+
+            if ((code >= 200 && code < 400) || code == 401 || code == 400 || code == 405) {
+                return "✅ متصل (" + ping + "ms)";
+            }
             return "⚠️ کد " + code + " (" + ping + "ms)";
         } catch (Exception e) { return "❌ قطع / عدم دسترسی"; }
     }
@@ -265,7 +308,7 @@ public class MainActivity extends AppCompatActivity {
         at.setTextColor(Color.parseColor("#94A3B8")); at.setPadding(0, 20, 0, 6); root.addView(at);
 
         SharedPreferences prefs = getSharedPreferences("AIPrefs", MODE_PRIVATE);
-        apiIn = new EditText(this); apiIn.setHint("بدون کلید هم تست درگاه انجام می‌شود...");
+        apiIn = new EditText(this); apiIn.setHint("بدون کلید هم تست تحریم انجام می‌شود...");
         apiIn.setHintTextColor(Color.parseColor("#64748B")); apiIn.setTextColor(Color.WHITE);
         apiIn.setText(prefs.getString("gemini_api_key", "")); root.addView(apiIn);
 
