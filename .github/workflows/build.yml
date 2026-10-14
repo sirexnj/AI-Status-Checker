@@ -1,0 +1,40 @@
+name: Build Signed Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Generate Gradle Wrapper & Build Signed APK
+        run: |
+          if [ -f "build.gradle" ]; then
+            gradle wrapper --gradle-version 8.4
+            chmod +x gradlew
+            keytool -genkey -v -keystore release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key -storepass 123456 -keypass 123456 -dname "CN=NimaJafari, OU=Sirex, O=SirexNJ, L=Qazvin, S=Qazvin, C=IR"
+            ./gradlew assembleRelease
+          else
+            echo "Project files not added yet. Ready for next step!"
+          fi
+
+      - name: Upload Release APK
+        if: hashFiles('app/build/outputs/apk/release/*.apk') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Status-Checker-Signed-APK
+          path: app/build/outputs/apk/release/*.apk
