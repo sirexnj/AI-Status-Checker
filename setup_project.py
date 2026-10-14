@@ -182,9 +182,6 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
-import android.view.Gravity;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 import java.util.*;
 
@@ -225,7 +222,6 @@ public class AppConfig {
         c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("default_deep", deep).apply();
     }
 
-    // Multi API Key Manager
     public static List<String> getApiKeys(Context c) {
         SharedPreferences p = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String raw = p.getString("api_keys_list", "");
@@ -271,7 +267,6 @@ public class AppConfig {
         return (fa ? "کلید #" : "Key #") + index + " (" + shortK + ")";
     }
 
-    // Service visibility filter
     public static Set<String> getDisabledServices(Context c) {
         return new HashSet<>(c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getStringSet("disabled_services", new HashSet<>()));
     }
@@ -284,7 +279,6 @@ public class AppConfig {
         return !getDisabledServices(c).contains(id);
     }
 
-    // Theme Colors
     public static int bgPage(Context c) { return Color.parseColor(isDark(c) ? "#0B1120" : "#F1F5F9"); }
     public static int bgCard(Context c) { return Color.parseColor(isDark(c) ? "#1E293B" : "#FFFFFF"); }
     public static int bgToolbar(Context c) { return Color.parseColor(isDark(c) ? "#1E293B" : "#0284C7"); }
@@ -303,8 +297,7 @@ public class AppConfig {
     }
 
     public static void showStylishBanner(Context c, String msg) {
-        Toast t = Toast.makeText(c, msg, Toast.LENGTH_LONG);
-        t.show();
+        Toast.makeText(c, msg, Toast.LENGTH_LONG).show();
     }
 }
 """,
@@ -519,20 +512,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void buildUi() {
-        boolean fa = AppConfig.isFa(this);
-        int dir = fa ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR;
-        int drawerGravity = fa ? Gravity.RIGHT : Gravity.LEFT;
+        final boolean fa = AppConfig.isFa(this);
+        final int dir = fa ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR;
+        final int drawerGravity = fa ? Gravity.RIGHT : Gravity.LEFT;
 
         drawerLayout = new DrawerLayout(this);
         drawerLayout.setLayoutDirection(dir);
 
-        // Main Vertical Container
         LinearLayout mainContainer = new LinearLayout(this);
         mainContainer.setOrientation(LinearLayout.VERTICAL);
         mainContainer.setBackgroundColor(AppConfig.bgPage(this));
         mainContainer.setLayoutDirection(dir);
 
-        // Custom Top Toolbar with Hamburger Icon
         LinearLayout toolbar = new LinearLayout(this);
         toolbar.setOrientation(LinearLayout.HORIZONTAL);
         toolbar.setGravity(Gravity.CENTER_VERTICAL);
@@ -568,7 +559,6 @@ public class MainActivity extends AppCompatActivity {
         toolbar.addView(gearBtn);
         mainContainer.addView(toolbar, new LinearLayout.LayoutParams(-1, -2));
 
-        // Scrollable Content
         ScrollView sv = new ScrollView(this);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -577,7 +567,6 @@ public class MainActivity extends AppCompatActivity {
         sv.addView(root);
         mainContainer.addView(sv, new LinearLayout.LayoutParams(-1, -1, 1f));
 
-        // 1. Header Card
         LinearLayout headerCard = new LinearLayout(this);
         headerCard.setOrientation(LinearLayout.VERTICAL);
         headerCard.setPadding(32, 32, 32, 32);
@@ -608,7 +597,6 @@ public class MainActivity extends AppCompatActivity {
         headerCard.addView(wBtn);
         wBtn.setOnClickListener(v -> startActivity(new Intent(this, WidgetConfigActivity.class)));
 
-        // 2. Test Mode Card (Shallow vs Deep + Info Button)
         LinearLayout modeCard = new LinearLayout(this);
         modeCard.setOrientation(LinearLayout.HORIZONTAL);
         modeCard.setGravity(Gravity.CENTER_VERTICAL);
@@ -634,7 +622,6 @@ public class MainActivity extends AppCompatActivity {
         infoBtn.setOnClickListener(v -> showTestModeInfoDialog(fa));
         modeCard.addView(infoBtn);
 
-        // 3. Quick API Key Dropdown Card (shown if user saved keys, or link to add)
         List<String> savedKeys = AppConfig.getApiKeys(this);
         LinearLayout keyCard = new LinearLayout(this);
         keyCard.setOrientation(LinearLayout.VERTICAL);
@@ -672,7 +659,6 @@ public class MainActivity extends AppCompatActivity {
         });
         keyCard.addView(mainKeySpinner);
 
-        // 4. Categories Card
         LinearLayout catCard = new LinearLayout(this);
         catCard.setOrientation(LinearLayout.VERTICAL);
         catCard.setPadding(28, 24, 28, 24);
@@ -688,7 +674,6 @@ public class MainActivity extends AppCompatActivity {
 
         catBoxes.clear();
         for (int i = 0; i < ServiceData.CATEGORIES_FA.length; i++) {
-            // Check if category has at least one enabled service
             boolean hasActive = false;
             for (ServiceData.AIService s : ServiceData.getAllServices()) {
                 if (s.catIndex == i && AppConfig.isServiceEnabled(this, s.id)) {
@@ -706,7 +691,6 @@ public class MainActivity extends AppCompatActivity {
             catCard.addView(cb);
         }
 
-        // 5. Start Test Button
         Button btn = new Button(this);
         btn.setText(fa ? "🚀 شروع تست هوشمند سرویس‌ها" : "🚀 Start Smart Diagnostic Test");
         btn.setTextColor(Color.WHITE);
@@ -722,7 +706,6 @@ public class MainActivity extends AppCompatActivity {
         root.addView(resBox);
         btn.setOnClickListener(v -> runTests());
 
-        // Build Modular Navigation Drawer Panel
         drawerPanel = buildDrawerPanel(fa, dir, drawerGravity);
 
         drawerLayout.addView(mainContainer, new DrawerLayout.LayoutParams(-1, -1));
@@ -734,14 +717,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(drawerLayout);
     }
 
-    private LinearLayout buildDrawerPanel(boolean fa, int dir, int drawerGravity) {
+    private LinearLayout buildDrawerPanel(final boolean fa, int dir, final int drawerGravity) {
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setBackgroundColor(AppConfig.bgCard(this));
         panel.setLayoutDirection(dir);
         panel.setClickable(true);
 
-        // Drawer Header
         LinearLayout dHead = new LinearLayout(this);
         dHead.setOrientation(LinearLayout.VERTICAL);
         dHead.setPadding(40, 72, 40, 40);
@@ -755,7 +737,7 @@ public class MainActivity extends AppCompatActivity {
         dHead.addView(dhTitle);
 
         TextView dhSub = new TextView(this);
-        dhSub.setText("Version " + AppConfig.VERSION_STR + "\nPowered by Gemini ✨");
+        dhSub.setText("Version " + AppConfig.VERSION_STR + "\\nPowered by Gemini ✨");
         dhSub.setTextColor(Color.parseColor("#94A3B8"));
         dhSub.setTextSize(12);
         dhSub.setPadding(0, 10, 0, 0);
@@ -769,7 +751,6 @@ public class MainActivity extends AppCompatActivity {
         dScroll.addView(dList);
         panel.addView(dScroll, new LinearLayout.LayoutParams(-1, -1));
 
-        // Section 1: Modular Categories (Expandable for future modules)
         addDrawerSectionTitle(dList, fa ? "دسته‌بندی‌های رادار" : "RADAR MODULES");
 
         addDrawerItem(dList, fa ? "🤖  رادار هوش مصنوعی (AI Test)" : "🤖  AI Status & Ping", true, () -> {
@@ -790,14 +771,12 @@ public class MainActivity extends AppCompatActivity {
                 : "✨ Gaming Servers Ping is coming soon...");
         });
 
-        // Divider
         View div = new View(this);
         div.setBackgroundColor(AppConfig.strokeCard(this));
         LinearLayout.LayoutParams dp = new LinearLayout.LayoutParams(-1, 2);
         dp.setMargins(12, 24, 12, 24);
         dList.addView(div, dp);
 
-        // Section 2: General & App Options
         addDrawerSectionTitle(dList, fa ? "امکانات و تنظیمات" : "GENERAL & SETTINGS");
 
         addDrawerItem(dList, fa ? "⚙️  تنظیمات پیشرفته" : "⚙️  Settings", false, () -> {
@@ -828,7 +807,7 @@ public class MainActivity extends AppCompatActivity {
         parent.addView(tv);
     }
 
-    private void addDrawerItem(LinearLayout parent, String title, boolean selected, Runnable onClick) {
+    private void addDrawerItem(LinearLayout parent, String title, boolean selected, final Runnable onClick) {
         TextView tv = new TextView(this);
         tv.setText(title);
         tv.setTextSize(14);
@@ -843,33 +822,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showTestModeInfoDialog(boolean fa) {
+        String msgFa = "🔹 تست سطحی (سریع):\\nاتصال و پینگ مستقیم دامنه اصلی را بررسی می‌کند. برای سرویس‌هایی مثل ChatGPT، Claude و Perplexity که با باز شدن تونل فیلترشکن در اپلیکیشن کار می‌کنند بهترین گزینه است.\\n\\n🔸 تست عمیق (ضد فریب):\\nعلاوه بر پینگ، به هسته مرکزی سرورها (به‌ویژه خانواده گوگل و جمینای) بسته آزمایشی می‌فرستد تا اگر صفحه اول باز بود ولی آی‌پی شما در لیست تحریم کشورها قرار داشت، فریب نخورد و تحریم را دقیق گزارش کند.";
+        String msgEn = "🔹 Shallow Test (Fast):\\nChecks direct domain reachability and ping. Ideal for apps like ChatGPT, Claude, and Perplexity.\\n\\n🔸 Deep Test (Strict Anti-Spoof):\\nPerforms a dual-probe against core backend endpoints (especially for Google & Gemini) to detect hidden IP geo-restrictions even when the landing webpage loads.";
         new AlertDialog.Builder(this)
             .setTitle(fa ? "تفاوت تست سطحی و تست عمیق" : "Shallow vs. Deep Test Mode")
-            .setMessage(fa
-                ? "🔹 تست سطحی (سریع):\nاتصال و پینگ مستقیم دامنه اصلی را بررسی می‌کند. برای سرویس‌هایی مثل ChatGPT، Claude و Perplexity که با باز شدن تونل فیلترشکن در اپلیکیشن کار می‌کنند بهترین گزینه است.\n\n🔸 تست عمیق (ضد فریب):\nعلاوه بر پینگ، به هسته مرکزی سرورها (به‌ویژه خانواده گوگل و جمینای) بسته آزمایشی می‌فرستد تا اگر صفحه اول باز بود ولی آی‌پی شما در لیست تحریم کشورها قرار داشت، فریب نخورد و تحریم را دقیق گزارش کند."
-                : "🔹 Shallow Test (Fast):\nChecks direct domain reachability and ping. Ideal for apps like ChatGPT, Claude, and Perplexity.\n\n🔸 Deep Test (Strict Anti-Spoof):\nPerforms a dual-probe against core backend endpoints (especially for Google & Gemini) to detect hidden IP geo-restrictions even when the landing webpage loads.")
+            .setMessage(fa ? msgFa : msgEn)
             .setPositiveButton(fa ? "متوجه شدم" : "Got it", null)
             .show();
     }
 
     private void showAboutDialog(boolean fa) {
+        String aboutFa = "⚡ نام برنامه: AI Status & Ping\\n" +
+                         "📦 نسخه: Version " + AppConfig.VERSION_STR + "\\n\\n" +
+                         "👨‍💻 طراح و توسعه‌دهنده:\\nنیما جعفری (Nima Jafari)\\n\\n" +
+                         "🤖 موتور هوشمند و همکار توسعه:\\nPowered by Gemini ✨\\n\\n" +
+                         "جامع‌ترین ابزار تشخیص وضعیت اتصال، پینگ لحظه‌ای و بررسی دقیق تحریم آی‌پی برای سرویس‌های هوش مصنوعی همراه با ویجت اختصاصی.";
+        String aboutEn = "⚡ Application: AI Status & Ping\\n" +
+                         "📦 Version: " + AppConfig.VERSION_STR + "\\n\\n" +
+                         "👨‍💻 Designed & Developed by:\\nNima Jafari (نیما جعفری)\\n\\n" +
+                         "🤖 AI Engine & Co-Developer:\\nPowered by Gemini ✨\\n\\n" +
+                         "Comprehensive diagnostic radar for monitoring connectivity, real-time latency, and geo-restrictions across AI platforms.";
         new AlertDialog.Builder(this)
             .setTitle(fa ? "ℹ️ درباره برنامه (About)" : "ℹ️ About AI Status & Ping")
-            .setMessage(fa
-                ? "⚡ نام برنامه: AI Status & Ping\n" +
-                  "📦 نسخه: Version " + AppConfig.VERSION_STR + "\n\n" +
-                  "👨‍💻 طراح و توسعه‌دهنده:\n" +
-                  "نیما جعفری (Nima Jafari)\n\n" +
-                  "🤖 موتور هوشمند و همکار توسعه:\n" +
-                  "Powered by Gemini ✨\n\n" +
-                  "جامع‌ترین ابزار تشخیص وضعیت اتصال، پینگ لحظه‌ای و بررسی دقیق تحریم آی‌پی برای سرویس‌های هوش مصنوعی همراه با ویجت اختصاصی."
-                : "⚡ Application: AI Status & Ping\n" +
-                  "📦 Version: " + AppConfig.VERSION_STR + "\n\n" +
-                  "👨‍💻 Designed & Developed by:\n" +
-                  "Nima Jafari (نیما جعفری)\n\n" +
-                  "🤖 AI Engine & Co-Developer:\n" +
-                  "Powered by Gemini ✨\n\n" +
-                  "Comprehensive diagnostic radar for monitoring connectivity, real-time latency, and geo-restrictions across AI platforms.")
+            .setMessage(fa ? aboutFa : aboutEn)
             .setPositiveButton(fa ? "بستن" : "Close", null)
             .show();
     }
@@ -884,7 +859,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        boolean isDeep = deepSwitch.isChecked();
+        final boolean isDeep = deepSwitch.isChecked();
 
         for (int catIdx : selCats) {
             TextView ch = new TextView(this);
@@ -894,7 +869,7 @@ public class MainActivity extends AppCompatActivity {
             ch.setPadding(8, 24, 8, 12);
             resBox.addView(ch);
 
-            for (ServiceData.AIService s : ServiceData.getAllServices()) {
+            for (final ServiceData.AIService s : ServiceData.getAllServices()) {
                 if (s.catIndex == catIdx && AppConfig.isServiceEnabled(this, s.id)) {
                     LinearLayout row = new LinearLayout(this);
                     row.setPadding(28, 22, 28, 22);
@@ -921,7 +896,7 @@ public class MainActivity extends AppCompatActivity {
                     resViews.put(s.id, st);
 
                     exec.execute(() -> {
-                        String r = ServiceData.checkService(MainActivity.this, s, isDeep);
+                        final String r = ServiceData.checkService(MainActivity.this, s, isDeep);
                         runOnUiThread(() -> {
                             TextView tv = resViews.get(s.id);
                             if (tv != null) {
@@ -957,7 +932,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void buildSettingsUi() {
-        boolean fa = AppConfig.isFa(this);
+        final boolean fa = AppConfig.isFa(this);
         int dir = fa ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR;
 
         LinearLayout main = new LinearLayout(this);
@@ -965,7 +940,6 @@ public class SettingsActivity extends AppCompatActivity {
         main.setBackgroundColor(AppConfig.bgPage(this));
         main.setLayoutDirection(dir);
 
-        // Top Bar
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
@@ -1004,7 +978,7 @@ public class SettingsActivity extends AppCompatActivity {
         // 1. Language Card
         LinearLayout langCard = makeSectionCard(fa ? "🌐 زبان و جهت برنامه (Language)" : "🌐 App Language & Direction");
         RadioGroup langGroup = new RadioGroup(this);
-        langGroup.setOrientation(RadioGroup.HORIZONTAL);
+        langGroup.setOrientation(RadioGroup.VERTICAL);
 
         RadioButton rbFa = new RadioButton(this);
         rbFa.setText("🇮🇷 فارسی (راست‌چین)");
@@ -1012,7 +986,7 @@ public class SettingsActivity extends AppCompatActivity {
         rbFa.setChecked(fa);
 
         RadioButton rbEn = new RadioButton(this);
-        rbEn.setText("🇬🇧 English (LTR)");
+        rbEn.setText("🇬🇧 English (Left-to-Right)");
         rbEn.setTextColor(AppConfig.textPrimary(this));
         rbEn.setChecked(!fa);
 
@@ -1024,7 +998,7 @@ public class SettingsActivity extends AppCompatActivity {
         rbFa.setOnClickListener(v -> { if (!fa) { AppConfig.setLang(this, "fa"); buildSettingsUi(); } });
         rbEn.setOnClickListener(v -> { if (fa) { AppConfig.setLang(this, "en"); buildSettingsUi(); } });
 
-        // 2. Theme Mode Card (Day / Night / System Auto)
+        // 2. Theme Mode Card
         LinearLayout themeCard = makeSectionCard(fa ? "🌓 حالت نمایش روز و شب (Theme)" : "🌓 Appearance & Theme Mode");
         RadioGroup themeGroup = new RadioGroup(this);
         int curTheme = AppConfig.getThemeMode(this);
@@ -1064,7 +1038,7 @@ public class SettingsActivity extends AppCompatActivity {
         testCard.addView(defDeep);
         root.addView(testCard, cardLp);
 
-        // 4. Multi API Key Manager Card (Auto-Add & Dropdown)
+        // 4. Multi API Key Manager Card
         LinearLayout apiCard = makeSectionCard(fa ? "🔑 مدیریت کلیدهای Gemini API" : "🔑 Gemini API Keys Manager");
 
         TextView apiSub = new TextView(this);
@@ -1079,7 +1053,7 @@ public class SettingsActivity extends AppCompatActivity {
         addRow.setPadding(0, 12, 0, 16);
 
         newKeyInput = new EditText(this);
-        newKeyInput.setHint(fa ? "کلید AIzaSy... را اینجا پیست کنید" : "Paste AIzaSy... key here");
+        newKeyInput.setHint(fa ? "کلید را اینجا پیست کنید..." : "Paste API key here...");
         newKeyInput.setHintTextColor(AppConfig.textSecondary(this));
         newKeyInput.setTextColor(AppConfig.textPrimary(this));
         newKeyInput.setTextSize(13);
@@ -1132,7 +1106,7 @@ public class SettingsActivity extends AppCompatActivity {
             AppConfig.setActiveApiKey(this, k);
             newKeyInput.setText("");
             refreshKeySpinner(fa);
-            Toast.makeText(this, fa ? "✅ کلید اضافه و فعال شد!" : "✅ Key added and selected!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, fa ? "✅ کلید اضافه و در لیست فعال شد!" : "✅ Key added and selected!", Toast.LENGTH_SHORT).show();
         });
 
         delKeyBtn.setOnClickListener(v -> {
@@ -1166,8 +1140,9 @@ public class SettingsActivity extends AppCompatActivity {
         for (ServiceData.AIService s : ServiceData.getAllServices()) {
             if (s.catIndex != curCat) {
                 curCat = s.catIndex;
+                int catId = curCat;
                 TextView ct = new TextView(this);
-                ct.setText("▪ " + ServiceData.getCategoryTitle(this, curCat));
+                ct.setText("▪ " + ServiceData.getCategoryTitle(this, catId));
                 ct.setTextColor(AppConfig.textAccent(this));
                 ct.setTypeface(null, Typeface.BOLD);
                 ct.setPadding(0, 16, 0, 4);
@@ -1269,7 +1244,7 @@ public class WidgetConfigActivity extends AppCompatActivity {
         Bundle ex = getIntent().getExtras();
         if (ex != null) widgetId = ex.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
 
-        boolean fa = AppConfig.isFa(this);
+        final boolean fa = AppConfig.isFa(this);
         int dir = fa ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR;
 
         ScrollView sv = new ScrollView(this); sv.setBackgroundColor(AppConfig.bgPage(this));
@@ -1288,7 +1263,8 @@ public class WidgetConfigActivity extends AppCompatActivity {
             if (!AppConfig.isServiceEnabled(this, s.id)) continue;
             if (s.catIndex != cur) {
                 cur = s.catIndex;
-                TextView ct = new TextView(this); ct.setText("▪ " + ServiceData.getCategoryTitle(this, cur));
+                int catId = cur;
+                TextView ct = new TextView(this); ct.setText("▪ " + ServiceData.getCategoryTitle(this, catId));
                 ct.setTextColor(AppConfig.textAccent(this));
                 ct.setTypeface(null, Typeface.BOLD); ct.setPadding(0, 22, 0, 6); root.addView(ct);
             }
@@ -1367,14 +1343,14 @@ public class StatusWidget extends AppWidgetProvider {
             }
         }
     }
-    public static void updateAppWidget(Context c, AppWidgetManager m, int id) {
-        boolean fa = AppConfig.isFa(c);
+    public static void updateAppWidget(final Context c, final AppWidgetManager m, final int id) {
+        final boolean fa = AppConfig.isFa(c);
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_layout);
         v.setTextViewText(R.id.widget_title, fa ? "⚡ رادار هوش مصنوعی" : "⚡ AI Status Radar");
         v.setTextViewText(R.id.widget_refresh_hint, fa ? "🔄 بروزرسانی" : "🔄 Refresh");
         v.setTextViewText(R.id.widget_results, fa ? "⏳ در حال تست لحظه‌ای سرورها..." : "⏳ Checking servers...");
         Intent i = new Intent(c, StatusWidget.class); i.setAction(ACT); i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
-        PendingIntent pi = PendingIntent.getBroadcast(c, id, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        final PendingIntent pi = PendingIntent.getBroadcast(c, id, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         v.setOnClickPendingIntent(R.id.widget_root, pi);
         m.updateAppWidget(id, v);
 
