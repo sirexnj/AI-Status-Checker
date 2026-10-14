@@ -29,8 +29,8 @@ android {
         applicationId "ir.nimasirex.aistatus"
         minSdk 24
         targetSdk 34
-        versionCode 5
-        versionName "1.4.0"
+        versionCode 6
+        versionName "1.4.1"
     }
     signingConfigs {
         release {
@@ -200,37 +200,31 @@ public class ServiceData {
         } catch (Exception e) { return ""; }
     }
 
-    // Strict Google AI Geo-Restriction Probe (Catches "This country isn't supported" even without API Key)
     private static boolean isGoogleAiGeoBlocked(String apiKey) {
         try {
+            // Check 1: NotebookLM strict geo redirect check
+            HttpURLConnection nc = (HttpURLConnection) new URL("https://notebooklm.google.com").openConnection();
+            nc.setConnectTimeout(4500);
+            nc.setReadTimeout(4500);
+            nc.setInstanceFollowRedirects(true);
+            nc.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) Chrome/124.0.0.0 Mobile");
+            int nCode = nc.getResponseCode();
+            String nUrl = nc.getURL().toString().toLowerCase();
+            String nBody = readStream(nCode >= 400 ? nc.getErrorStream() : nc.getInputStream());
+            if (nUrl.contains("unsupported") || nUrl.contains("region") || nUrl.contains("faq") || nBody.contains("not supported")) {
+                return true;
+            }
+
+            // Check 2: Generative Language API endpoint check
             String probeUrl = apiKey.isEmpty()
-                ? "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDummyKeyForGeoCheck"
+                ? "https://generativelanguage.googleapis.com/v1beta/models?key=AIzaSyDummyKeyForGeoCheck"
                 : "https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey;
             HttpURLConnection gc = (HttpURLConnection) new URL(probeUrl).openConnection();
             gc.setConnectTimeout(4500);
             gc.setReadTimeout(4500);
-            if (apiKey.isEmpty()) {
-                gc.setRequestMethod("POST");
-                gc.setRequestProperty("Content-Type", "application/json");
-                gc.setDoOutput(true);
-                OutputStream os = gc.getOutputStream();
-                os.write("{\"contents\":[{\"parts\":[{\"text\":\"hi\"}]}]}".getBytes("UTF-8"));
-                os.close();
-            }
-            int code = gc.getResponseCode();
-            String body = readStream(code >= 400 ? gc.getErrorStream() : gc.getInputStream());
-            if (body.contains("location is not supported") || body.contains("country") || body.contains("failed_precondition") || code == 403) {
-                return true;
-            }
-            // Second strict probe via NotebookLM redirect check
-            HttpURLConnection nc = (HttpURLConnection) new URL("https://notebooklm.google.com").openConnection();
-            nc.setConnectTimeout(4000);
-            nc.setReadTimeout(4000);
-            nc.setInstanceFollowRedirects(true);
-            nc.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) Chrome/124.0.0.0 Mobile");
-            nc.getResponseCode();
-            String nUrl = nc.getURL().toString().toLowerCase();
-            if (nUrl.contains("unsupported") || nUrl.contains("region") || nUrl.contains("faq")) {
+            int gCode = gc.getResponseCode();
+            String gBody = readStream(gCode >= 400 ? gc.getErrorStream() : gc.getInputStream());
+            if (gBody.contains("location is not supported") || gBody.contains("country") || gBody.contains("failed_precondition") || gCode == 403) {
                 return true;
             }
         } catch (Exception ignored) {}
@@ -255,7 +249,6 @@ public class ServiceData {
             String snip = readStream(code >= 400 ? c.getErrorStream() : c.getInputStream());
             String fu = c.getURL().toString().toLowerCase();
 
-            // Dual-check for all Google AI services (except general Vertex Cloud console)
             if (s.category.equals(CATEGORIES[0]) && !s.id.equals("vertex_ai")) {
                 if (isGoogleAiGeoBlocked(key)) {
                     long ping = System.currentTimeMillis() - t0;
