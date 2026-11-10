@@ -29,8 +29,8 @@ android {
         applicationId "ir.nimasirex.aistatus"
         minSdk 24
         targetSdk 34
-        versionCode 8
-        versionName "1.6.0"
+        versionCode 9
+        versionName "1.7.0"
     }
     signingConfigs {
         release {
@@ -187,7 +187,7 @@ import java.util.*;
 
 public class AppConfig {
     public static final String PREFS = "AIPrefs";
-    public static final String VERSION_STR = "1.6.0 (Build 8)";
+    public static final String VERSION_STR = "1.7.0 (Build 9)";
 
     public static boolean isFa(Context c) {
         return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("lang", "fa").equals("fa");
@@ -197,7 +197,6 @@ public class AppConfig {
         c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("lang", lang).apply();
     }
 
-    // Theme: 0 = Auto (System), 1 = Light (Day), 2 = Dark (Night)
     public static int getThemeMode(Context c) {
         return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt("theme_mode", 2);
     }
@@ -316,7 +315,12 @@ public class ServiceData {
         public AIService(String id, int catIndex, String n, String u, boolean k) {
             this.id = id; this.catIndex = catIndex; this.name = n; this.url = u; this.supportsApiKey = k;
         }
+        public boolean isSocial() {
+            return catIndex >= 7;
+        }
     }
+
+    public static final int AI_CAT_COUNT = 7;
 
     public static final String[] CATEGORIES_FA = {
         "خانواده گوگل و جمینای (Google & Gemini)",
@@ -325,7 +329,11 @@ public class ServiceData {
         "خانواده پرپلکسیتی (Perplexity AI)",
         "خانواده مایکروسافت و گیت‌هاب (Copilot)",
         "خانواده ایکس و متا (Grok & Meta AI)",
-        "پلتفرم‌های ابزار و مدل‌های مکمل"
+        "پلتفرم‌های ابزار و مدل‌های مکمل",
+        "پیام‌رسان‌های جهانی (Global Messengers)",
+        "شبکه‌های اجتماعی و حرفه‌ای (Social Networks)",
+        "پلتفرم‌های ویدیو و موزیک (Video & Music)",
+        "پلتفرم‌ها و پیام‌رسان‌های ایرانی (داخلی)"
     };
 
     public static final String[] CATEGORIES_EN = {
@@ -335,8 +343,18 @@ public class ServiceData {
         "Perplexity AI Family",
         "Microsoft & GitHub Copilot",
         "xAI Grok & Meta AI",
-        "AI Tools & Cloud Platforms"
+        "AI Tools & Cloud Platforms",
+        "Global Messengers",
+        "Social & Professional Networks",
+        "Video, Music & Streaming",
+        "Iranian Messengers & Platforms"
     };
+
+    private static volatile Boolean googleBlockedCache = null;
+
+    public static void resetGeoCache() {
+        googleBlockedCache = null;
+    }
 
     public static String getCategoryTitle(Context c, int idx) {
         return AppConfig.isFa(c) ? CATEGORIES_FA[idx] : CATEGORIES_EN[idx];
@@ -344,6 +362,7 @@ public class ServiceData {
 
     public static List<AIService> getAllServices() {
         List<AIService> l = new ArrayList<>();
+        // AI Families (0..6)
         l.add(new AIService("gem_web", 0, "Gemini Web/App", "https://gemini.google.com/app", false));
         l.add(new AIService("ai_studio", 0, "Google AI Studio", "https://aistudio.google.com", false));
         l.add(new AIService("gem_api", 0, "Gemini API", "https://generativelanguage.googleapis.com/v1beta/models", true));
@@ -367,27 +386,57 @@ public class ServiceData {
         l.add(new AIService("huggingface", 6, "Hugging Face", "https://huggingface.co", false));
         l.add(new AIService("elevenlabs", 6, "ElevenLabs Audio", "https://api.elevenlabs.io/v1/voices", false));
         l.add(new AIService("replicate", 6, "Replicate Cloud", "https://api.replicate.com/v1/models", false));
+
+        // Social & Messengers (7..10)
+        l.add(new AIService("tg_web", 7, "Telegram", "https://web.telegram.org", false));
+        l.add(new AIService("wa_web", 7, "WhatsApp", "https://web.whatsapp.com", false));
+        l.add(new AIService("discord", 7, "Discord", "https://discord.com/api/v9/experiments", false));
+        l.add(new AIService("snapchat", 7, "Snapchat", "https://www.snapchat.com", false));
+        l.add(new AIService("viber", 7, "Viber", "https://www.viber.com", false));
+        l.add(new AIService("line_app", 7, "LINE", "https://line.me", false));
+        l.add(new AIService("wechat", 7, "WeChat", "https://www.wechat.com", false));
+        l.add(new AIService("kakaotalk", 7, "KakaoTalk", "https://www.kakaocorp.com", false));
+
+        l.add(new AIService("instagram", 8, "Instagram", "https://www.instagram.com", false));
+        l.add(new AIService("x_twitter", 8, "X (Twitter)", "https://x.com", false));
+        l.add(new AIService("threads", 8, "Threads", "https://www.threads.net", false));
+        l.add(new AIService("facebook", 8, "Facebook", "https://www.facebook.com", false));
+        l.add(new AIService("linkedin", 8, "LinkedIn", "https://www.linkedin.com", false));
+        l.add(new AIService("reddit", 8, "Reddit", "https://www.reddit.com", false));
+        l.add(new AIService("pinterest", 8, "Pinterest", "https://www.pinterest.com", false));
+
+        l.add(new AIService("youtube", 9, "YouTube", "https://www.youtube.com", false));
+        l.add(new AIService("tiktok", 9, "TikTok", "https://www.tiktok.com", false));
+        l.add(new AIService("soundcloud", 9, "SoundCloud", "https://soundcloud.com", false));
+        l.add(new AIService("spotify", 9, "Spotify", "https://open.spotify.com", false));
+        l.add(new AIService("twitch", 9, "Twitch", "https://www.twitch.tv", false));
+
+        l.add(new AIService("rubika", 10, "Rubika (روبیکا)", "https://web.rubika.ir", false));
+        l.add(new AIService("eitaa", 10, "Eitaa (ایتا)", "https://web.eitaa.com", false));
+        l.add(new AIService("bale", 10, "Bale (بله)", "https://web.bale.ai", false));
+        l.add(new AIService("soroush", 10, "Soroush+ (سروش‌پلاس)", "https://web.splus.ir", false));
         return l;
     }
 
     private static String readStream(InputStream is) {
         if (is == null) return "";
-        try {
-            BufferedReader r = new BufferedReader(new InputStreamReader(is));
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(is))) {
             StringBuilder sb = new StringBuilder();
             char[] b = new char[4096];
             int n;
             while ((n = r.read(b)) != -1 && sb.length() < 60000) {
                 sb.append(b, 0, n);
             }
-            r.close();
             return sb.toString().toLowerCase();
         } catch (Exception e) { return ""; }
     }
 
     private static boolean isGoogleAiGeoBlocked() {
+        Boolean cached = googleBlockedCache;
+        if (cached != null) return cached;
+        HttpURLConnection nc = null;
         try {
-            HttpURLConnection nc = (HttpURLConnection) new URL("https://notebooklm.google.com").openConnection();
+            nc = (HttpURLConnection) new URL("https://notebooklm.google.com").openConnection();
             nc.setConnectTimeout(4500);
             nc.setReadTimeout(4500);
             nc.setInstanceFollowRedirects(true);
@@ -395,34 +444,41 @@ public class ServiceData {
             int nCode = nc.getResponseCode();
             String nUrl = nc.getURL().toString().toLowerCase();
             String nBody = readStream(nCode >= 400 ? nc.getErrorStream() : nc.getInputStream());
-            if (nUrl.contains("unsupported") || nUrl.contains("region") || nUrl.contains("faq") || nBody.contains("not supported")) {
-                return true;
-            }
-        } catch (Exception ignored) {}
-        return false;
+            boolean blocked = nUrl.contains("unsupported") || nUrl.contains("/region") || nUrl.contains("/faq") || nBody.contains("not supported");
+            googleBlockedCache = blocked;
+            return blocked;
+        } catch (Exception ignored) {
+            return false;
+        } finally {
+            if (nc != null) nc.disconnect();
+        }
     }
 
     public static String checkService(Context ctx, AIService s, boolean isDeepTest) {
         boolean fa = AppConfig.isFa(ctx);
         String key = AppConfig.getActiveApiKey(ctx);
         long t0 = System.currentTimeMillis();
+        HttpURLConnection c = null;
         try {
             String targetUrl = s.url;
-            if (s.supportsApiKey && !key.isEmpty()) {
-                targetUrl = "https://generativelanguage.googleapis.com/v1beta/models?key=" + key;
-            } else if (isDeepTest && s.id.equals("chatgpt_web")) {
+            if (!s.supportsApiKey && isDeepTest && s.id.equals("chatgpt_web")) {
                 targetUrl = "https://chatgpt.com/backend-api/models";
             }
 
-            HttpURLConnection c = (HttpURLConnection) new URL(targetUrl).openConnection();
-            c.setConnectTimeout(6000); c.setReadTimeout(6000); c.setInstanceFollowRedirects(true);
+            c = (HttpURLConnection) new URL(targetUrl).openConnection();
+            c.setConnectTimeout(6000);
+            c.setReadTimeout(6000);
+            c.setInstanceFollowRedirects(true);
             c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36");
+            if (s.supportsApiKey && !key.isEmpty()) {
+                c.setRequestProperty("x-goog-api-key", key);
+            }
 
             int code = c.getResponseCode();
             String snip = readStream(code >= 400 ? c.getErrorStream() : c.getInputStream());
             String fu = c.getURL().toString().toLowerCase();
 
-            if (isDeepTest && s.catIndex == 0 && !s.id.equals("vertex_ai")) {
+            if (isDeepTest && s.catIndex == 0 && !s.id.equals("vertex_ai") && !s.supportsApiKey) {
                 if (isGoogleAiGeoBlocked()) {
                     long ping = System.currentTimeMillis() - t0;
                     return (fa ? "🟡 تحریم آی‌پی (" : "🟡 Geo-Blocked (") + ping + "ms)";
@@ -431,14 +487,30 @@ public class ServiceData {
 
             long ping = System.currentTimeMillis() - t0;
 
-            if (fu.contains("unsupported") || fu.contains("region") || fu.contains("faq") || fu.contains("unavailable") ||
+            if (s.supportsApiKey && !key.isEmpty() && (code == 400 || code == 403)) {
+                if (snip.contains("api_key_invalid") || snip.contains("api key not valid") || snip.contains("invalid_argument")) {
+                    return (fa ? "🔴 کلید نامعتبر (" : "🔴 Invalid Key (") + ping + "ms)";
+                }
+            }
+
+            boolean urlGeoBlocked = !s.isSocial() && (
+                fu.contains("unsupported") || fu.contains("/region") || fu.contains("/faq") || fu.contains("unavailable")
+            );
+
+            if (urlGeoBlocked ||
                 snip.contains("country isn't supported") ||
                 snip.contains("location is not supported") ||
                 snip.contains("not available in your country") ||
+                snip.contains("not available in your region") ||
                 snip.contains("unsupported_country") ||
                 snip.contains("region_not_supported") ||
+                snip.contains("access denied") && s.id.equals("tiktok") ||
                 snip.contains("error 1020")) {
                 return (fa ? "🟡 تحریم آی‌پی (" : "🟡 Geo-Blocked (") + ping + "ms)";
+            }
+
+            if (s.catIndex == 10 && (code == 403 || code == 451)) {
+                return (fa ? "🟡 محدود به آی‌پی ایران (" : "🟡 Iran IP Only (") + ping + "ms)";
             }
 
             if (s.supportsApiKey && key.isEmpty() && (code == 403 || code == 400)) {
@@ -446,7 +518,7 @@ public class ServiceData {
             }
 
             if (code == 403 || code == 451) {
-                if (!isDeepTest && (s.catIndex == 1 || s.catIndex == 2 || s.catIndex == 3)) {
+                if (!isDeepTest && (s.catIndex == 1 || s.catIndex == 2 || s.catIndex == 3 || s.isSocial())) {
                     return (fa ? "🟢 در دسترس (" : "🟢 Reachable (") + ping + "ms)";
                 }
                 return (fa ? "🟡 محدودیت آی‌پی (" : "🟡 Restricted (") + ping + "ms)";
@@ -461,7 +533,9 @@ public class ServiceData {
             }
             return (fa ? "🟡 کد " : "🟡 Code ") + code + " (" + ping + "ms)";
         } catch (Exception e) {
-            return fa ? "🔴 قطع / عدم دسترسی" : "🔴 Offline / Blocked";
+            return fa ? "🔴 قطع / فیلتر" : "🔴 Offline / Filtered";
+        } finally {
+            if (c != null) c.disconnect();
         }
     }
 }
@@ -481,14 +555,13 @@ import java.util.concurrent.*;
 
 public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
-    private LinearLayout drawerPanel;
     private final List<CheckBox> catBoxes = new ArrayList<>();
     private final Map<String, TextView> resViews = new HashMap<>();
     private LinearLayout resBox;
     private Switch deepSwitch;
-    private Spinner mainKeySpinner;
     private final ExecutorService exec = Executors.newFixedThreadPool(6);
     private String lastConfigSig = "";
+    private int activeModule = 0; // 0 = AI Radar, 1 = Social Radar
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -513,6 +586,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void buildUi() {
         final boolean fa = AppConfig.isFa(this);
+        final boolean isSocialMod = (activeModule == 1);
         final int dir = fa ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR;
         final int drawerGravity = fa ? Gravity.RIGHT : Gravity.LEFT;
 
@@ -541,7 +615,11 @@ public class MainActivity extends AppCompatActivity {
         });
 
         TextView titleTv = new TextView(this);
-        titleTv.setText(fa ? "⚡ رادار هوش مصنوعی" : "⚡ AI Status & Ping");
+        if (isSocialMod) {
+            titleTv.setText(fa ? "🌐 رادار شبکه‌های اجتماعی" : "🌐 Social Networks Radar");
+        } else {
+            titleTv.setText(fa ? "⚡ رادار هوش مصنوعی" : "⚡ AI Status & Ping");
+        }
         titleTv.setTextColor(Color.WHITE);
         titleTv.setTextSize(18);
         titleTv.setTypeface(null, Typeface.BOLD);
@@ -574,7 +652,11 @@ public class MainActivity extends AppCompatActivity {
         root.addView(headerCard);
 
         TextView h = new TextView(this);
-        h.setText(fa ? "مانیتورینگ هوشمند پینگ و تحریم AI" : "Smart AI Ping & Geo-Block Radar");
+        if (isSocialMod) {
+            h.setText(fa ? "مانیتورینگ پیام‌رسان‌ها و شبکه‌های اجتماعی" : "Social Media & Messengers Diagnostics");
+        } else {
+            h.setText(fa ? "مانیتورینگ هوشمند پینگ و تحریم AI" : "Smart AI Ping & Geo-Block Radar");
+        }
         h.setTextColor(AppConfig.textAccent(this));
         h.setTextSize(17);
         h.setTypeface(null, Typeface.BOLD);
@@ -582,7 +664,9 @@ public class MainActivity extends AppCompatActivity {
         headerCard.addView(h);
 
         TextView sub = new TextView(this);
-        sub.setText(fa ? "بررسی لحظه‌ای اتصال سرورها با قابلیت تشخیص تحریم" : "Real-time connectivity & restriction diagnostics");
+        sub.setText(fa
+            ? (isSocialMod ? "بررسی پینگ، فیلترینگ و دسترسی پلتفرم‌های جهانی و داخلی" : "بررسی لحظه‌ای اتصال سرورها با قابلیت تشخیص تحریم")
+            : (isSocialMod ? "Check reachability & latency across global and local platforms" : "Real-time connectivity & restriction diagnostics"));
         sub.setTextColor(AppConfig.textSecondary(this));
         sub.setTextSize(12);
         sub.setGravity(Gravity.CENTER);
@@ -597,13 +681,14 @@ public class MainActivity extends AppCompatActivity {
         headerCard.addView(wBtn);
         wBtn.setOnClickListener(v -> startActivity(new Intent(this, WidgetConfigActivity.class)));
 
+        LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(-1, -2);
+        mp.setMargins(0, 24, 0, 0);
+
         LinearLayout modeCard = new LinearLayout(this);
         modeCard.setOrientation(LinearLayout.HORIZONTAL);
         modeCard.setGravity(Gravity.CENTER_VERTICAL);
         modeCard.setPadding(28, 22, 28, 22);
         modeCard.setBackground(AppConfig.makeCard(AppConfig.bgCard(this), AppConfig.strokeCard(this), 26));
-        LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(-1, -2);
-        mp.setMargins(0, 24, 0, 0);
         root.addView(modeCard, mp);
 
         deepSwitch = new Switch(this);
@@ -612,6 +697,10 @@ public class MainActivity extends AppCompatActivity {
         deepSwitch.setTypeface(null, Typeface.BOLD);
         deepSwitch.setChecked(AppConfig.getDefaultDeepTest(this));
         deepSwitch.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1f));
+        deepSwitch.setOnCheckedChangeListener((bv, isChecked) -> {
+            AppConfig.setDefaultDeepTest(MainActivity.this, isChecked);
+            lastConfigSig = getConfigSig();
+        });
         modeCard.addView(deepSwitch);
 
         Button infoBtn = new Button(this);
@@ -622,42 +711,44 @@ public class MainActivity extends AppCompatActivity {
         infoBtn.setOnClickListener(v -> showTestModeInfoDialog(fa));
         modeCard.addView(infoBtn);
 
-        List<String> savedKeys = AppConfig.getApiKeys(this);
-        LinearLayout keyCard = new LinearLayout(this);
-        keyCard.setOrientation(LinearLayout.VERTICAL);
-        keyCard.setPadding(28, 22, 28, 22);
-        keyCard.setBackground(AppConfig.makeCard(AppConfig.bgCard(this), AppConfig.strokeCard(this), 26));
-        root.addView(keyCard, mp);
+        if (!isSocialMod) {
+            List<String> savedKeys = AppConfig.getApiKeys(this);
+            LinearLayout keyCard = new LinearLayout(this);
+            keyCard.setOrientation(LinearLayout.VERTICAL);
+            keyCard.setPadding(28, 22, 28, 22);
+            keyCard.setBackground(AppConfig.makeCard(AppConfig.bgCard(this), AppConfig.strokeCard(this), 26));
+            root.addView(keyCard, mp);
 
-        TextView kt = new TextView(this);
-        kt.setText(fa ? "🔑 کلید فعال Gemini API:" : "🔑 Active Gemini API Key:");
-        kt.setTextColor(AppConfig.textSecondary(this));
-        kt.setTextSize(12);
-        keyCard.addView(kt);
+            TextView kt = new TextView(this);
+            kt.setText(fa ? "🔑 کلید فعال Gemini API:" : "🔑 Active Gemini API Key:");
+            kt.setTextColor(AppConfig.textSecondary(this));
+            kt.setTextSize(12);
+            keyCard.addView(kt);
 
-        List<String> spinLabels = new ArrayList<>();
-        final List<String> spinValues = new ArrayList<>();
-        spinLabels.add(AppConfig.maskKey("", 0, fa));
-        spinValues.add("");
-        for (int i = 0; i < savedKeys.size(); i++) {
-            spinLabels.add(AppConfig.maskKey(savedKeys.get(i), i + 1, fa));
-            spinValues.add(savedKeys.get(i));
-        }
-
-        mainKeySpinner = new Spinner(this);
-        ArrayAdapter<String> spinAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, spinLabels);
-        mainKeySpinner.setAdapter(spinAdapter);
-        String activeKey = AppConfig.getActiveApiKey(this);
-        int selIdx = spinValues.indexOf(activeKey);
-        if (selIdx >= 0) mainKeySpinner.setSelection(selIdx);
-
-        mainKeySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
-                AppConfig.setActiveApiKey(MainActivity.this, spinValues.get(pos));
+            List<String> spinLabels = new ArrayList<>();
+            final List<String> spinValues = new ArrayList<>();
+            spinLabels.add(AppConfig.maskKey("", 0, fa));
+            spinValues.add("");
+            for (int i = 0; i < savedKeys.size(); i++) {
+                spinLabels.add(AppConfig.maskKey(savedKeys.get(i), i + 1, fa));
+                spinValues.add(savedKeys.get(i));
             }
-            @Override public void onNothingSelected(AdapterView<?> p) {}
-        });
-        keyCard.addView(mainKeySpinner);
+
+            Spinner mainKeySpinner = new Spinner(this);
+            mainKeySpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, spinLabels));
+            String activeKey = AppConfig.getActiveApiKey(this);
+            int selIdx = spinValues.indexOf(activeKey);
+            if (selIdx >= 0) mainKeySpinner.setSelection(selIdx);
+
+            mainKeySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+                    AppConfig.setActiveApiKey(MainActivity.this, spinValues.get(pos));
+                    lastConfigSig = getConfigSig();
+                }
+                @Override public void onNothingSelected(AdapterView<?> p) {}
+            });
+            keyCard.addView(mainKeySpinner);
+        }
 
         LinearLayout catCard = new LinearLayout(this);
         catCard.setOrientation(LinearLayout.VERTICAL);
@@ -666,14 +757,19 @@ public class MainActivity extends AppCompatActivity {
         root.addView(catCard, mp);
 
         TextView sh = new TextView(this);
-        sh.setText(fa ? "۱. خانواده‌های مورد نظر برای تست:" : "1. Select AI Families to Test:");
+        sh.setText(fa
+            ? (isSocialMod ? "۱. دسته‌های شبکه اجتماعی برای تست:" : "۱. خانواده‌های هوش مصنوعی برای تست:")
+            : (isSocialMod ? "1. Select Social Categories to Test:" : "1. Select AI Families to Test:"));
         sh.setTextColor(AppConfig.textPrimary(this));
         sh.setTypeface(null, Typeface.BOLD);
         sh.setPadding(0, 0, 0, 12);
         catCard.addView(sh);
 
         catBoxes.clear();
-        for (int i = 0; i < ServiceData.CATEGORIES_FA.length; i++) {
+        int startCat = isSocialMod ? ServiceData.AI_CAT_COUNT : 0;
+        int endCat = isSocialMod ? ServiceData.CATEGORIES_FA.length : ServiceData.AI_CAT_COUNT;
+
+        for (int i = startCat; i < endCat; i++) {
             boolean hasActive = false;
             for (ServiceData.AIService s : ServiceData.getAllServices()) {
                 if (s.catIndex == i && AppConfig.isServiceEnabled(this, s.id)) {
@@ -686,7 +782,7 @@ public class MainActivity extends AppCompatActivity {
             cb.setText(ServiceData.getCategoryTitle(this, i));
             cb.setTag(i);
             cb.setTextColor(AppConfig.textPrimary(this));
-            cb.setChecked(i == 0);
+            cb.setChecked(isSocialMod ? (i == 7 || i == 8) : (i == 0));
             catBoxes.add(cb);
             catCard.addView(cb);
         }
@@ -706,7 +802,7 @@ public class MainActivity extends AppCompatActivity {
         root.addView(resBox);
         btn.setOnClickListener(v -> runTests());
 
-        drawerPanel = buildDrawerPanel(fa, dir, drawerGravity);
+        LinearLayout drawerPanel = buildDrawerPanel(fa, dir, drawerGravity);
 
         drawerLayout.addView(mainContainer, new DrawerLayout.LayoutParams(-1, -1));
         DrawerLayout.LayoutParams dlp = new DrawerLayout.LayoutParams(
@@ -753,15 +849,20 @@ public class MainActivity extends AppCompatActivity {
 
         addDrawerSectionTitle(dList, fa ? "دسته‌بندی‌های رادار" : "RADAR MODULES");
 
-        addDrawerItem(dList, fa ? "🤖  رادار هوش مصنوعی (AI Test)" : "🤖  AI Status & Ping", true, () -> {
+        addDrawerItem(dList, fa ? "🤖  رادار هوش مصنوعی (AI Test)" : "🤖  AI Status & Ping", activeModule == 0, () -> {
             drawerLayout.closeDrawer(drawerGravity);
+            if (activeModule != 0) {
+                activeModule = 0;
+                buildUi();
+            }
         });
 
-        addDrawerItem(dList, fa ? "🌐  شبکه‌های اجتماعی" : "🌐  Social Networks", false, () -> {
+        addDrawerItem(dList, fa ? "🌐  شبکه‌های اجتماعی" : "🌐  Social Networks", activeModule == 1, () -> {
             drawerLayout.closeDrawer(drawerGravity);
-            AppConfig.showStylishBanner(this, fa
-                ? "✨ بخش رادار شبکه‌های اجتماعی به زودی در آپدیت‌های بعدی اضافه می‌شود..."
-                : "✨ Social Networks Radar is coming soon in future updates...");
+            if (activeModule != 1) {
+                activeModule = 1;
+                buildUi();
+            }
         });
 
         addDrawerItem(dList, fa ? "🎮  سرورهای بازی و گیمینگ" : "🎮  Gaming Servers", false, () -> {
@@ -822,8 +923,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showTestModeInfoDialog(boolean fa) {
-        String msgFa = "🔹 تست سطحی (سریع):\\nاتصال و پینگ مستقیم دامنه اصلی را بررسی می‌کند. برای سرویس‌هایی مثل ChatGPT، Claude و Perplexity که با باز شدن تونل فیلترشکن در اپلیکیشن کار می‌کنند بهترین گزینه است.\\n\\n🔸 تست عمیق (ضد فریب):\\nعلاوه بر پینگ، به هسته مرکزی سرورها (به‌ویژه خانواده گوگل و جمینای) بسته آزمایشی می‌فرستد تا اگر صفحه اول باز بود ولی آی‌پی شما در لیست تحریم کشورها قرار داشت، فریب نخورد و تحریم را دقیق گزارش کند.";
-        String msgEn = "🔹 Shallow Test (Fast):\\nChecks direct domain reachability and ping. Ideal for apps like ChatGPT, Claude, and Perplexity.\\n\\n🔸 Deep Test (Strict Anti-Spoof):\\nPerforms a dual-probe against core backend endpoints (especially for Google & Gemini) to detect hidden IP geo-restrictions even when the landing webpage loads.";
+        String msgFa = "🔹 تست سطحی (سریع):\\nاتصال و پینگ مستقیم دامنه اصلی را بررسی می‌کند. برای سرویس‌هایی مثل ChatGPT، Claude و شبکه‌های اجتماعی که با باز شدن تونل فیلترشکن در اپلیکیشن کار می‌کنند بهترین گزینه است.\\n\\n🔸 تست عمیق (ضد فریب):\\nعلاوه بر پینگ، به هسته مرکزی سرورها (به‌ویژه خانواده گوگل و جمینای) بسته آزمایشی می‌فرستد تا اگر صفحه اول باز بود ولی آی‌پی شما در لیست تحریم کشورها قرار داشت، فریب نخورد و تحریم را دقیق گزارش کند.";
+        String msgEn = "🔹 Shallow Test (Fast):\\nChecks direct domain reachability and ping. Ideal for apps like ChatGPT, Claude, and Social Media.\\n\\n🔸 Deep Test (Strict Anti-Spoof):\\nPerforms a dual-probe against core backend endpoints (especially for Google & Gemini) to detect hidden IP geo-restrictions even when the landing webpage loads.";
         new AlertDialog.Builder(this)
             .setTitle(fa ? "تفاوت تست سطحی و تست عمیق" : "Shallow vs. Deep Test Mode")
             .setMessage(fa ? msgFa : msgEn)
@@ -836,12 +937,12 @@ public class MainActivity extends AppCompatActivity {
                          "📦 نسخه: Version " + AppConfig.VERSION_STR + "\\n\\n" +
                          "👨‍💻 طراح و توسعه‌دهنده:\\nنیما جعفری (Nima Jafari)\\n\\n" +
                          "🤖 موتور هوشمند و همکار توسعه:\\nPowered by Gemini ✨\\n\\n" +
-                         "جامع‌ترین ابزار تشخیص وضعیت اتصال، پینگ لحظه‌ای و بررسی دقیق تحریم آی‌پی برای سرویس‌های هوش مصنوعی همراه با ویجت اختصاصی.";
+                         "جامع‌ترین ابزار تشخیص وضعیت اتصال، پینگ لحظه‌ای و بررسی دقیق تحریم آی‌پی برای سرویس‌های هوش مصنوعی و شبکه‌های اجتماعی همراه با ویجت اختصاصی.";
         String aboutEn = "⚡ Application: AI Status & Ping\\n" +
                          "📦 Version: " + AppConfig.VERSION_STR + "\\n\\n" +
                          "👨‍💻 Designed & Developed by:\\nNima Jafari (نیما جعفری)\\n\\n" +
                          "🤖 AI Engine & Co-Developer:\\nPowered by Gemini ✨\\n\\n" +
-                         "Comprehensive diagnostic radar for monitoring connectivity, real-time latency, and geo-restrictions across AI platforms.";
+                         "Comprehensive diagnostic radar for monitoring connectivity, real-time latency, and geo-restrictions across AI platforms and social networks.";
         new AlertDialog.Builder(this)
             .setTitle(fa ? "ℹ️ درباره برنامه (About)" : "ℹ️ About AI Status & Ping")
             .setMessage(fa ? aboutFa : aboutEn)
@@ -855,10 +956,11 @@ public class MainActivity extends AppCompatActivity {
         List<Integer> selCats = new ArrayList<>();
         for (CheckBox cb : catBoxes) if (cb.isChecked()) selCats.add((Integer) cb.getTag());
         if (selCats.isEmpty()) {
-            Toast.makeText(this, fa ? "حداقل یک خانواده را انتخاب کنید" : "Please select at least one family", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, fa ? "حداقل یک دسته را انتخاب کنید" : "Please select at least one category", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        ServiceData.resetGeoCache();
         final boolean isDeep = deepSwitch.isChecked();
 
         for (int catIdx : selCats) {
@@ -975,7 +1077,6 @@ public class SettingsActivity extends AppCompatActivity {
         LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
         cardLp.setMargins(0, 0, 0, 28);
 
-        // 1. Language Card
         LinearLayout langCard = makeSectionCard(fa ? "🌐 زبان و جهت برنامه (Language)" : "🌐 App Language & Direction");
         RadioGroup langGroup = new RadioGroup(this);
         langGroup.setOrientation(RadioGroup.VERTICAL);
@@ -998,7 +1099,6 @@ public class SettingsActivity extends AppCompatActivity {
         rbFa.setOnClickListener(v -> { if (!fa) { AppConfig.setLang(this, "fa"); buildSettingsUi(); } });
         rbEn.setOnClickListener(v -> { if (fa) { AppConfig.setLang(this, "en"); buildSettingsUi(); } });
 
-        // 2. Theme Mode Card
         LinearLayout themeCard = makeSectionCard(fa ? "🌓 حالت نمایش روز و شب (Theme)" : "🌓 Appearance & Theme Mode");
         RadioGroup themeGroup = new RadioGroup(this);
         int curTheme = AppConfig.getThemeMode(this);
@@ -1028,7 +1128,6 @@ public class SettingsActivity extends AppCompatActivity {
         rbDay.setOnClickListener(v -> { AppConfig.setThemeMode(this, 1); buildSettingsUi(); });
         rbNight.setOnClickListener(v -> { AppConfig.setThemeMode(this, 2); buildSettingsUi(); });
 
-        // 3. Default Test Mode Card
         LinearLayout testCard = makeSectionCard(fa ? "⚡ حالت پیش‌فرض تست (Default Test Mode)" : "⚡ Default Diagnostic Mode");
         Switch defDeep = new Switch(this);
         defDeep.setText(fa ? "شروع برنامه با «تست عمیق (ضد فریب)»" : "Start with Deep Test Mode enabled");
@@ -1038,7 +1137,6 @@ public class SettingsActivity extends AppCompatActivity {
         testCard.addView(defDeep);
         root.addView(testCard, cardLp);
 
-        // 4. Multi API Key Manager Card
         LinearLayout apiCard = makeSectionCard(fa ? "🔑 مدیریت کلیدهای Gemini API" : "🔑 Gemini API Keys Manager");
 
         TextView apiSub = new TextView(this);
@@ -1123,12 +1221,11 @@ public class SettingsActivity extends AppCompatActivity {
             Toast.makeText(this, fa ? "🗑️ کلید انتخابی حذف شد" : "🗑️ Selected key removed", Toast.LENGTH_SHORT).show();
         });
 
-        // 5. Manage Visible Services Card
-        LinearLayout srvCard = makeSectionCard(fa ? "🎛️ مدیریت نمایش سرویس‌ها در صفحه اصلی" : "🎛️ Manage Visible AI Services");
+        LinearLayout srvCard = makeSectionCard(fa ? "🎛️ مدیریت نمایش سرویس‌ها (AI و شبکه‌های اجتماعی)" : "🎛️ Manage Visible Services (AI & Social)");
         TextView srvHint = new TextView(this);
         srvHint.setText(fa
-            ? "هر سرویسی را که تیکش را بردارید، دیگر در صفحه اصلی و ویجت نمایش داده نمی‌شود:"
-            : "Uncheck any service you don't use to hide it from the dashboard:");
+            ? "هر سرویسی را که تیکش را بردارید، دیگر در صفحات رادار و ویجت نمایش داده نمی‌شود:"
+            : "Uncheck any service you don't use to hide it from the dashboard and widget:");
         srvHint.setTextColor(AppConfig.textSecondary(this));
         srvHint.setTextSize(12);
         srvHint.setPadding(0, 0, 0, 12);
@@ -1199,8 +1296,7 @@ public class SettingsActivity extends AppCompatActivity {
             values.add(keys.get(i));
         }
 
-        ArrayAdapter<String> ad = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, labels);
-        keySpinner.setAdapter(ad);
+        keySpinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, labels));
 
         String active = AppConfig.getActiveApiKey(this);
         int idx = values.indexOf(active);
@@ -1230,7 +1326,6 @@ import android.content.*;
 import android.graphics.*;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import java.util.*;
@@ -1271,7 +1366,7 @@ public class WidgetConfigActivity extends AppCompatActivity {
             CheckBox cb = new CheckBox(this); cb.setText(s.name); cb.setTag(s.id);
             cb.setTextColor(AppConfig.textPrimary(this));
             if (saved != null) cb.setChecked(saved.contains(s.id));
-            else if (s.id.equals("gem_web") || s.id.equals("chatgpt_web") || s.id.equals("grok_ai")) cb.setChecked(true);
+            else if (s.id.equals("gem_web") || s.id.equals("chatgpt_web") || s.id.equals("tg_web") || s.id.equals("instagram")) cb.setChecked(true);
             boxes.add(cb); root.addView(cb);
         }
 
@@ -1325,55 +1420,97 @@ import android.appwidget.*;
 import android.content.*;
 import android.widget.RemoteViews;
 import java.util.*;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 public class StatusWidget extends AppWidgetProvider {
     public static final String ACT = "ir.nimasirex.aistatus.ACTION_REFRESH_WIDGET";
-    @Override public void onUpdate(Context c, AppWidgetManager m, int[] ids) {
-        for (int id : ids) updateAppWidget(c, m, id);
-    }
-    @Override public void onReceive(Context c, Intent i) {
-        super.onReceive(c, i);
-        if (ACT.equals(i.getAction())) {
-            int id = i.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
-            AppWidgetManager m = AppWidgetManager.getInstance(c);
-            if (id != AppWidgetManager.INVALID_APPWIDGET_ID) updateAppWidget(c, m, id);
-            else {
-                for (int wid : m.getAppWidgetIds(new ComponentName(c, StatusWidget.class))) updateAppWidget(c, m, wid);
-            }
-        }
-    }
-    public static void updateAppWidget(final Context c, final AppWidgetManager m, final int id) {
-        final boolean fa = AppConfig.isFa(c);
-        RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_layout);
-        v.setTextViewText(R.id.widget_title, fa ? "⚡ رادار هوش مصنوعی" : "⚡ AI Status Radar");
-        v.setTextViewText(R.id.widget_refresh_hint, fa ? "🔄 بروزرسانی" : "🔄 Refresh");
-        v.setTextViewText(R.id.widget_results, fa ? "⏳ در حال تست لحظه‌ای سرورها..." : "⏳ Checking servers...");
-        Intent i = new Intent(c, StatusWidget.class); i.setAction(ACT); i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
-        final PendingIntent pi = PendingIntent.getBroadcast(c, id, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        v.setOnClickPendingIntent(R.id.widget_root, pi);
-        m.updateAppWidget(id, v);
 
-        Executors.newSingleThreadExecutor().execute(() -> {
-            SharedPreferences p = c.getSharedPreferences("WidgetPrefs", Context.MODE_PRIVATE);
-            Set<String> ids = p.getStringSet("w_" + id, null);
-            if (ids == null || ids.isEmpty()) ids = p.getStringSet("w_default", null);
-            if (ids == null || ids.isEmpty()) ids = new HashSet<>(Arrays.asList("gem_web", "chatgpt_web", "grok_ai"));
-            boolean isDeep = AppConfig.getDefaultDeepTest(c);
-            StringBuilder sb = new StringBuilder();
-            for (ServiceData.AIService s : ServiceData.getAllServices()) {
-                if (ids.contains(s.id)) {
-                    if (sb.length() > 0) sb.append("\\n");
-                    String status = ServiceData.checkService(c, s, isDeep);
-                    sb.append(status).append("  ⬅  ").append(s.name);
+    @Override public void onUpdate(Context c, AppWidgetManager m, int[] ids) {
+        runWidgetChecks(c, m, ids, null);
+    }
+
+    @Override public void onReceive(Context c, Intent i) {
+        if (ACT.equals(i.getAction()) || AppWidgetManager.ACTION_APPWIDGET_UPDATE.equals(i.getAction())) {
+            final PendingResult pr = goAsync();
+            AppWidgetManager m = AppWidgetManager.getInstance(c);
+            int[] ids;
+            if (ACT.equals(i.getAction())) {
+                int id = i.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
+                ids = (id != AppWidgetManager.INVALID_APPWIDGET_ID)
+                    ? new int[]{id}
+                    : m.getAppWidgetIds(new ComponentName(c, StatusWidget.class));
+            } else {
+                ids = i.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS);
+                if (ids == null || ids.length == 0) {
+                    ids = m.getAppWidgetIds(new ComponentName(c, StatusWidget.class));
                 }
             }
-            RemoteViews uv = new RemoteViews(c.getPackageName(), R.layout.widget_layout);
-            uv.setTextViewText(R.id.widget_title, fa ? "⚡ رادار هوش مصنوعی" : "⚡ AI Status Radar");
-            uv.setTextViewText(R.id.widget_refresh_hint, fa ? "🔄 بروزرسانی" : "🔄 Refresh");
-            uv.setTextViewText(R.id.widget_results, sb.toString());
-            uv.setOnClickPendingIntent(R.id.widget_root, pi);
-            m.updateAppWidget(id, uv);
+            runWidgetChecks(c, m, ids, pr);
+        } else {
+            super.onReceive(c, i);
+        }
+    }
+
+    public static void updateAppWidget(final Context c, final AppWidgetManager m, final int id) {
+        runWidgetChecks(c, m, new int[]{id}, null);
+    }
+
+    private static void runWidgetChecks(final Context c, final AppWidgetManager m, final int[] ids, final PendingResult pr) {
+        if (ids == null || ids.length == 0) {
+            if (pr != null) {
+                try { pr.finish(); } catch (Exception ignored) {}
+            }
+            return;
+        }
+        final boolean fa = AppConfig.isFa(c);
+        for (int id : ids) {
+            RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_layout);
+            v.setTextViewText(R.id.widget_title, fa ? "⚡ رادار هوش مصنوعی" : "⚡ AI Status Radar");
+            v.setTextViewText(R.id.widget_refresh_hint, fa ? "🔄 بروزرسانی" : "🔄 Refresh");
+            v.setTextViewText(R.id.widget_results, fa ? "⏳ در حال تست لحظه‌ای سرورها..." : "⏳ Checking servers...");
+            Intent i = new Intent(c, StatusWidget.class);
+            i.setAction(ACT);
+            i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
+            PendingIntent pi = PendingIntent.getBroadcast(c, id, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            v.setOnClickPendingIntent(R.id.widget_root, pi);
+            m.updateAppWidget(id, v);
+        }
+
+        final ExecutorService ex = Executors.newSingleThreadExecutor();
+        ex.execute(() -> {
+            try {
+                ServiceData.resetGeoCache();
+                SharedPreferences p = c.getSharedPreferences("WidgetPrefs", Context.MODE_PRIVATE);
+                boolean isDeep = AppConfig.getDefaultDeepTest(c);
+                for (int id : ids) {
+                    Set<String> sel = p.getStringSet("w_" + id, null);
+                    if (sel == null || sel.isEmpty()) sel = p.getStringSet("w_default", null);
+                    if (sel == null || sel.isEmpty()) sel = new HashSet<>(Arrays.asList("gem_web", "chatgpt_web", "tg_web"));
+                    StringBuilder sb = new StringBuilder();
+                    for (ServiceData.AIService s : ServiceData.getAllServices()) {
+                        if (sel.contains(s.id)) {
+                            if (sb.length() > 0) sb.append("\\n");
+                            String status = ServiceData.checkService(c, s, isDeep);
+                            sb.append(status).append("  ⬅  ").append(s.name);
+                        }
+                    }
+                    Intent i = new Intent(c, StatusWidget.class);
+                    i.setAction(ACT);
+                    i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
+                    PendingIntent pi = PendingIntent.getBroadcast(c, id, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                    RemoteViews uv = new RemoteViews(c.getPackageName(), R.layout.widget_layout);
+                    uv.setTextViewText(R.id.widget_title, fa ? "⚡ رادار هوش مصنوعی" : "⚡ AI Status Radar");
+                    uv.setTextViewText(R.id.widget_refresh_hint, fa ? "🔄 بروزرسانی" : "🔄 Refresh");
+                    uv.setTextViewText(R.id.widget_results, sb.toString());
+                    uv.setOnClickPendingIntent(R.id.widget_root, pi);
+                    m.updateAppWidget(id, uv);
+                }
+            } finally {
+                ex.shutdown();
+                if (pr != null) {
+                    try { pr.finish(); } catch (Exception ignored) {}
+                }
+            }
         });
     }
 }
