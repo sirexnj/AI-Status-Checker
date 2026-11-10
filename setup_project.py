@@ -362,7 +362,6 @@ public class ServiceData {
 
     public static List<AIService> getAllServices() {
         List<AIService> l = new ArrayList<>();
-        // AI Families (0..6)
         l.add(new AIService("gem_web", 0, "Gemini Web/App", "https://gemini.google.com/app", false));
         l.add(new AIService("ai_studio", 0, "Google AI Studio", "https://aistudio.google.com", false));
         l.add(new AIService("gem_api", 0, "Gemini API", "https://generativelanguage.googleapis.com/v1beta/models", true));
@@ -387,7 +386,6 @@ public class ServiceData {
         l.add(new AIService("elevenlabs", 6, "ElevenLabs Audio", "https://api.elevenlabs.io/v1/voices", false));
         l.add(new AIService("replicate", 6, "Replicate Cloud", "https://api.replicate.com/v1/models", false));
 
-        // Social & Messengers (7..10)
         l.add(new AIService("tg_web", 7, "Telegram", "https://web.telegram.org", false));
         l.add(new AIService("wa_web", 7, "WhatsApp", "https://web.whatsapp.com", false));
         l.add(new AIService("discord", 7, "Discord", "https://discord.com/api/v9/experiments", false));
@@ -561,7 +559,7 @@ public class MainActivity extends AppCompatActivity {
     private Switch deepSwitch;
     private final ExecutorService exec = Executors.newFixedThreadPool(6);
     private String lastConfigSig = "";
-    private int activeModule = 0; // 0 = AI Radar, 1 = Social Radar
+    private int activeModule = 0;
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -1326,6 +1324,7 @@ import android.content.*;
 import android.graphics.*;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import java.util.*;
